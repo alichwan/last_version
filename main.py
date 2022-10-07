@@ -108,12 +108,13 @@ def run_experiment(max_steps_trace: int, max_len_form: int, direct=False):
             start_counter_ns = time.perf_counter_ns()
             for satisfiable, bin_num, valids in formulas_generator:
                 if satisfiable:
-                    trace_sat = True
                     end_counter_ns = time.perf_counter_ns()
                     timer_ns = end_counter_ns - start_counter_ns
+                    trace_sat = True
                     results.append((p, L, bin_num, timer_ns / (10**9)))
-                    start_counter_ns = time.perf_counter_ns()
                     print(results)
+                    with open("tiempos.txt", "a") as f:
+                        f.write(f"({p}, {L}, {bin_num}, {timer_ns / (10**9)})\n")
                     break
             if trace_sat : 
                 print(f"Trace with {p} steps, satisfiable with {L} nodes and structure id {bin_num}")

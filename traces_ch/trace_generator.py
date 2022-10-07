@@ -28,7 +28,7 @@ def random_walk(start: str, connections: dict, steps: int):
         options = connections[actual]
         actual = np.random.choice(options)
         pos_trace.append(actual)
-        alternatives.append([op for op in options if op != actual])
+        # alternatives.append([op for op in options if op != actual])
     for i in range(1, len(pos_trace)):
         alternatives.append(pos_trace[:i])
     return pos_trace, alternatives
