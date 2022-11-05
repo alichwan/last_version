@@ -1,73 +1,95 @@
-# TODO:
-# - tomar el grafo y hacer un vector que represente todos los predicados (detectores) disponibles
-# - dada un conjunto de traces positivas P y negativas N, EN FORMATO LISTA DE CONJUNTOS DE PREDICADOS, construir un arbol
-#   - se parte por un nodo raíz
-#   - por cada trace, se toma cada una de las combinaciones de predicados, si existe esa combinación, se sitúa en el siguiente nodo
-#   - si no existe la combinacion, se agrega un nuevo camino, se situa en el siguiente nodo
-#   - al llegar a cada hoja su valor toma si es positivo o negativo
-#
-
 import numpy as np
 import pandas as pd
 import json
 
-# https://www.bogotobogo.com/python/python_graph_data_structures.php
-class Vertex:
-    def __init__(self, node):
-        self.id = node
-        self.adjacent = {}
+
+class Node:
+    def __init__(self, event2bin, value=None):
+        '''
+        Create a node (vertex) of the tree
+
+        Parameters
+        ----------
+        value : int
+            Represent the value stored in the node: positive or negative
+        '''
+        self.event2bin = event2bin
+        self.value = value
+        self.children = dict()
+        self.sat = True
+
+    def set_child(self, trace, sign):
+        '''
+        Add a child node as left or right child to the current node
+
+        Parameters
+        ----------
+        trace : str
+            Trace of the events which define the path
+        sign : str
+            Represent the sign of the trace, if a child is positive and negative the tree es insatisfacible
+        '''
+        # vemos si queda trace o se acabó
+        if len(trace) > 0:
+            event = trace.pop(0)
+            trace_key = self.event2bin(event)
+            # vemos si existe el camino
+            branch = self.children.get(trace_key)
+            if branch:
+                # self.children[trace_key].set_child(trace, sign)
+                branch.set_child(trace, sign)
+            else:
+                self.children[trace_key] = Node(self.event2bin)
+                self.children[trace_key].set_child(trace, sign)
+        else:
+            if (self.value is not None) and (self.value != sign):
+                print('INSATISFIABLE TREE FOR NODE SIGNS')
+                print(self.value, sign)
+                self.sat = False
+            self.value = sign
 
     def __str__(self):
-        return str(self.id) + ' adjacent: ' + str([x.id for x in self.adjacent])
+        return str(self.value)
 
-    def add_neighbor(self, neighbor, weight=0):
-        self.adjacent[neighbor] = weight
 
-    def get_connections(self):
-        return self.adjacent.keys()  
+class CompTree:
+    '''
+    Create a new tree
+    Parameters
+    ----------
+    root : Node
+    Represent the root of the tree
+    '''
 
-    def get_id(self):
-        return self.id
+    def __init__(self, ev2binpr, root=None):
+        self.root = root if root else Node(ev2binpr)
 
-    def get_weight(self, neighbor):
-        return self.adjacent[neighbor]
+    def process_traces(self, traces):
+        for sgn in ['neg', 'pos']:
+            for trace in traces[sgn]:
+                self.root.set_child(trace=trace, sign=sgn)
 
-class Graph:
-    def __init__(self):
-        self.vert_dict = {}
-        self.num_vertices = 0
+    def sat(self):
+        sat = True
+        watching = [self.root]
+        while watching:
+            actual = watching.pop(0)
+            sat = sat and actual.sat
+            watching += [n for n in actual.children.values()]
+        return sat
 
-    def __iter__(self):
-        return iter(self.vert_dict.values())
+    def print_tree(self, root=None, key=None, level=0):
+        root = root if root else self.root
+        if level > 0:
+            print('\t' * level, f'{key}->', root)
+        else: 
+            print('() -> root')
+        for key, child in root.children.items():
+            self.print_tree(child, key, level + 1)
 
-    def add_vertex(self, node):
-        self.num_vertices = self.num_vertices + 1
-        new_vertex = Vertex(node)
-        self.vert_dict[node] = new_vertex
-        return new_vertex
-
-    def get_vertex(self, n):
-        if n in self.vert_dict:
-            return self.vert_dict[n]
-        else:
-            return None
-
-    def add_edge(self, frm, to, cost = 0):
-        if frm not in self.vert_dict:
-            self.add_vertex(frm)
-        if to not in self.vert_dict:
-            self.add_vertex(to)
-
-        self.vert_dict[frm].add_neighbor(self.vert_dict[to], cost)
-        self.vert_dict[to].add_neighbor(self.vert_dict[frm], cost)
-
-    def get_vertices(self):
-        return self.vert_dict.keys()
-
-# puede ser
 
 def read_json(path):
-    with open(path, "r") as json_file:
+    with open(path, 'r') as json_file:
         return json.load(json_file)
 
 
@@ -132,28 +154,30 @@ def create_preds_vector(all_traces):
         for trace in all_traces[sgn]:
             for event in trace:
                 predicates = predicates.union(set(event))
-    return tuple(predicates) 
+    return tuple(predicates)
 
 
-def event2binpreds(event, predicates):
-    return tuple(int(obj in event) for obj in predicates)
+def event2binpreds(predicates):
+    def e2b(ev):
+        return tuple(int(obj in ev) for obj in predicates)
+    return e2b
 
 
 def make_tree(traces, e2bp):
-    tree = {root: None}
+    tree = CompTree(e2bp)
+    tree.process_traces(traces)
+    tree.print_tree()
+    print(tree.sat())
 
 
-def create_traces():
-    pass
-
-
-
-if __name__ == "__main__":
-    connections = read_json("../traces_ch/B6ByNegPMKs_connectivity.json")
-    objects = read_json("../traces_ch/B6ByNegPMKs_objects.json")
-    p = 7
+if __name__ == '__main__':
+    connections = read_json('../traces_ch/B6ByNegPMKs_connectivity.json')
+    objects = read_json('../traces_ch/B6ByNegPMKs_objects.json')
+    p = 5
     all_traces = generate_trace(p, connections, objects)
     predicates = create_preds_vector(all_traces)
 
-    ev2binpr = event2binpreds(all_traces['pos'][0][-1], predicates)
-
+    ev2binpr = event2binpreds(predicates)
+    
+    print(predicates)
+    make_tree(all_traces, ev2binpr)
