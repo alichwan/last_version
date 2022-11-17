@@ -1,4 +1,4 @@
-#include "traces.lp".
+#include "traces_amano.lp".
 
 
 % Los parámetros como id, var y time serán dependientes de las traces que entren en juego.
@@ -19,7 +19,7 @@ finalNegSat(Id) :- theformula(F), negTrace(Id), not sat(Id,F).
 
 % operadores: satisfacibilidad y subformulabilidad
 % not
-sat(Id, F, T) :- F=f(not_,I), not sat(Id, I, T), id(Id), time(T), subformula(F),subformula(I).
+sat(Id, F, T) :- F=f(not_,I), not sat(Id, I, T), id(Id), time(T), subformula(F), subformula(I).
 subformula(I) :- F=f(not_,I), subformula(F).
 % and
 sat(Id, F, T) :- F=f(Op,I,D), binop(Op, and_), id(Id), time(T),sat(Id, I, T), sat(Id, D, T), subformula(F), subformula(I), subformula(D).
@@ -31,7 +31,7 @@ sat(Id, F, T) :- F=f(Op,I,D), binop(Op, or_), id(Id), time(T), sat(Id, D, T), su
 subformula(I) :- F=f(Op,I,D), binop(Op, or_), subformula(F).
 subformula(D) :- F=f(Op,I,D), binop(Op, or_), subformula(F).
 % next
-sat(Id, F, T-1) :- F=f(Op,I), unop(Op, next_), sat(Id, I, T), id(Id), time(T), subformula(F), subformula(I).
+sat(Id, F, T-1) :- F=f(Op,I), unop(Op, next_), sat(Id, I, T), id(Id), time(T), subformula(F), subformula(I), T>0.
 subformula(I)   :-  F=f(Op,I), unop(Op, next_), subformula(F).
 % eventually
 sat(Id, F, T) :- F=f(Op,I), unop(Op, eventually_), sat(Id, I, Tp), Tp>=T, time(T), time(Tp), id(Id), subformula(F), subformula(I).
@@ -50,7 +50,7 @@ satbetween(Id, F, T1, T2)   :- satbetween(Id, F, T1+1, T2), sat(Id, F, T1).
 
 % -------------hojas---------
 % Por abajo, las hojas deben ser subformulas y satisfacibles.
-subformula(H) :- trace(Id, Var, T), id(Id), time(T), var(Var), predVar(Pred, Var), H=h(Pred).
+% subformula(H) :- trace(Id, Var, T), id(Id), time(T), var(Var), predVar(Pred, Var), H=h(Pred).
 % % Satisfacibilidad de las hojas
 sat(Id, H, T) :- trace(Id, Var, T), id(Id), time(T), var(Var), predVar(Pred, Var), H=h(Pred), subformula(H).
 % -------------fin de hojas---------
