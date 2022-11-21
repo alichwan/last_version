@@ -7,8 +7,10 @@ n_states = 4
 Q = range(n_states)
 N = range(n_states)
 T = range(n_states)
+F = range(n_states)
 Sigma = range(n_states)
 
+root = 0
 lambda_e = 1
 lambda_t = 1
 lambda_pos = 1
@@ -46,16 +48,37 @@ r_3 = modelo.addConstrs(
 r_4 = modelo.addConstrs(
     (delta[q, sigma, q] == 1 for q in T for sigma in Sigma), name="R(4)"
 )
-# ## restricciones (5)
-# r_5 = modelo.addConstrs(, name='R(5)')
+
+##############################
+# # ## restricciones (5)
+# r_5 = modelo.addConstrs(
+#     (
+#         x[p(n), q] + x[n, qp] -1 <= delta[q, s(n), qp]
+#         for n in set(N).difference(set([root,]))
+#         for q in Q
+#         for qp in Q
+#     ), name='R(5)'
+# )
+##############################
+
 # ## restricciones (6)
-# r_6 = modelo.addConstrs(, name='R(6)')
+r_6 = modelo.addConstrs(
+    (lambda_pos*quicksum(c_pos(n)*x[n, q] for q in F) 
+    + lambda_neg*quicksum(c_neg(n)*x[n, q] for q in set(Q).difference(set(F))) 
+    == c[n] for n in N), name='R(6)'
+)
 # ## restricciones (7)
-# r_7 = modelo.addConstrs(, name='R(7)')
+# r_7 = modelo.addConstrs(
+    (
+        quicksum(delta[q, sigma, qp] for qp in set(Q).difference(set([q,]))) == e[q,sigma]
+        for sigma in Sigma
+        for q in Q
+    ), name='R(7)'
+)
 # ## restricciones (8)
 r_8 = modelo.addConstrs(
-  (quicksum(x[n,q] for q in set(Q).difference(set(T))) == t[n] for n in N)
-  , name='R(8)'
+    (quicksum(x[n,q] for q in set(Q).difference(set(T))) == t[n] for n in N)
+    , name='R(8)'
 )
 
 # setear funcion objetivo
