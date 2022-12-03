@@ -3,93 +3,72 @@ import pandas as pd
 import json
 
 
-class Node:
-    def __init__(self, event2bin, value=None):
-        '''
-        Create a node (vertex) of the tree
+class Node(object):
+    _id = 0
 
-        Parameters
-        ----------
-        value : int
-            Represent the value stored in the node: positive or negative
-        '''
-        self.event2bin = event2bin
-        self.value = value
-        self.children = dict()
+    def __init__(self, parent_id=None, sigma=None):
+        self._id = Node._id
+        Node._id += 1
+
+        self.parent_id = parent_id
+        self.sigma = sigma
+        self.sign = None
+
+
+class PrefixTree:
+
+    def __init__(self, traces, e2b):
+        self.ev2binpr = e2b
+        self.root = Node()
+        self.id_nodes = {0: self.root}
+        self.tree = {0: dict()}
+        self.Sigma = set()
         self.sat = True
-
-    def set_child(self, trace, sign):
-        '''
-        Add a child node as left or right child to the current node
-
-        Parameters
-        ----------
-        trace : str
-            Trace of the events which define the path
-        sign : str
-            Represent the sign of the trace, if a child is positive and negative the tree es insatisfacible
-        '''
-        # vemos si queda trace o se acabó
-        if len(trace) > 0:
-            event = trace.pop(0)
-            trace_key = self.event2bin(event)
-            # vemos si existe el camino
-            branch = self.children.get(trace_key)
-            if branch:
-                # self.children[trace_key].set_child(trace, sign)
-                branch.set_child(trace, sign)
-            else:
-                self.children[trace_key] = Node(self.event2bin)
-                self.children[trace_key].set_child(trace, sign)
-        else:
-            if (self.value is not None) and (self.value != sign):
-                print('INSATISFIABLE TREE FOR NODE SIGNS')
-                print(self.value, sign)
-                self.sat = False
-            self.value = sign
-
-    def __str__(self):
-        return str(self.value)
-
-
-class CompTree:
-    '''
-    Create a new tree
-    Parameters
-    ----------
-    root : Node
-    Represent the root of the tree
-    '''
-
-    def __init__(self, ev2binpr, root=None):
-        self.root = root if root else Node(ev2binpr)
+        self.process_traces(traces)
 
     def process_traces(self, traces):
-        for sgn in ['neg', 'pos']:
+        for sgn in ["neg", "pos"]:
             for trace in traces[sgn]:
-                self.root.set_child(trace=trace, sign=sgn)
+                self.new_trace(trace, sgn)
 
-    def sat(self):
-        sat = True
-        watching = [self.root]
-        while watching:
-            actual = watching.pop(0)
-            sat = sat and actual.sat
-            watching += [n for n in actual.children.values()]
-        return sat
+    def new_trace(self, trace, sign):
+        actual_id = 0
+        actual_dict = self.tree
+        actual_node = self.id_nodes[actual_id]
+        for event in trace:
+            trace_key = ev2binpr(event)  # lo codificamos en sigma
+            self.Sigma.add(trace_key)  # agregamos al alfabeto
+            partial_id = actual_dict[actual_id].get(trace_key)
 
-    def print_tree(self, root=None, key=None, level=0):
-        root = root if root else self.root
-        if level > 0:
-            print('\t' * level, f'{key}->', root)
-        else: 
-            print('() -> root')
-        for key, child in root.children.items():
-            self.print_tree(child, key, level + 1)
+            if partial_id != None:
+                actual_id = partial_id
+                actual_dict = actual_dict[actual_id]
+                actual_node = self.id_nodes[actual_id]
+            else:
+                new_node = Node(parent_id=actual_node._id, sigma=trace_key)
+                new_id = new_node._id
+                self.id_nodes[new_id] = new_node
+
+                actual_node = self.id_nodes[new_id]
+
+                actual_dict[actual_id][new_id] = dict()
+                actual_dict = actual_dict[actual_id]
+
+                actual_id = new_id
+
+        if (actual_node.sign != sign) and (actual_node.sign is not None):
+            print("INSATISFIABLE TREE FOR NODE SIGNS")
+            print(actual_node.sign, sign)
+            self.sat = False
+        actual_node.sign = sign
+
+    def print_tree(self):
+        print(json.dumps(self.tree))
+
 
 
 def read_json(path):
-    with open(path, 'r') as json_file:
+    with open(path, "r") as json_file:
         return json.load(json_file)
 
 
@@ -122,12 +101,12 @@ def traces_to_objects(trace: list, objects: dict):
 
 
 def gen_traces_list(pos_trace: list, neg_traces: list, objects: dict):
-    traces_objects_for_tree = {'pos': [], 'neg': []}
+    traces_objects_for_tree = {"pos": [], "neg": []}
     pos_objects = traces_to_objects(pos_trace, objects)
-    traces_objects_for_tree['pos'].append(pos_objects)
+    traces_objects_for_tree["pos"].append(pos_objects)
     for neg_trace in neg_traces:
         neg_objects = traces_to_objects(neg_trace, objects)
-        traces_objects_for_tree['neg'].append(neg_objects)
+        traces_objects_for_tree["neg"].append(neg_objects)
     return traces_objects_for_tree
 
 
@@ -150,7 +129,7 @@ def generate_trace(p: int, connections: dict, objects: dict):
 
 def create_preds_vector(all_traces):
     predicates = set()
-    for sgn in ['pos', 'neg']:
+    for sgn in ["pos", "neg"]:
         for trace in all_traces[sgn]:
             for event in trace:
                 predicates = predicates.union(set(event))
@@ -160,24 +139,31 @@ def create_preds_vector(all_traces):
 def event2binpreds(predicates):
     def e2b(ev):
         return tuple(int(obj in ev) for obj in predicates)
+
     return e2b
 
 
-def make_tree(traces, e2bp):
-    tree = CompTree(e2bp)
-    tree.process_traces(traces)
-    tree.print_tree()
-    print(tree.sat())
+def make_tree(traces, e2b):
+    tree = PrefixTree(traces, e2b)
+    return tree
 
 
-if __name__ == '__main__':
-    connections = read_json('../traces_ch/B6ByNegPMKs_connectivity.json')
-    objects = read_json('../traces_ch/B6ByNegPMKs_objects.json')
-    p = 5
+if __name__ == "__main__":
+    connections = read_json("../traces_ch/B6ByNegPMKs_connectivity.json")
+    objects = read_json("../traces_ch/B6ByNegPMKs_objects.json")
+    p = 2
+
     all_traces = generate_trace(p, connections, objects)
     predicates = create_preds_vector(all_traces)
 
     ev2binpr = event2binpreds(predicates)
-    
+
     print(predicates)
-    make_tree(all_traces, ev2binpr)
+    arbol = make_tree(all_traces, ev2binpr)
+
+    arbol.print_tree()
+    print(arbol.sat)
+    print(arbol.Sigma)
+    print(arbol.id_nodes)
+    # print(arbol.id_nodes[5].parent)
+
