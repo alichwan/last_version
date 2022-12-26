@@ -1,0 +1,14 @@
+{
+  "pos": [[["chair"], [], ["chair"]]],
+  "neg": [
+    [["chair"], ["chair"]],
+    [["chair"], ["chair"]],
+    [["chair"], []],
+    [["chair"], [], []],
+    [["chair"], [], ["chair"]],
+    [["chair"], [], []],
+    [["chair"], [], ["chair"], ["chair"]],
+    [["chair"], [], ["chair"], ["chair"]],
+    [["chair"], [], ["chair"], []]
+  ]
+}

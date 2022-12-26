@@ -36,7 +36,7 @@ class PrefixTree:
         actual_dict = self.tree
         actual_node = self.id_nodes[actual_id]
         for event in trace:
-            trace_key = ev2binpr(event)  # lo codificamos en sigma
+            trace_key = self.ev2binpr(event)  # lo codificamos en sigma
             self.Sigma.add(trace_key)  # agregamos al alfabeto
             partial_id = actual_dict[actual_id].get(trace_key)
 
@@ -63,9 +63,37 @@ class PrefixTree:
         actual_node.sign = sign
 
     def print_tree(self):
-        print(json.dumps(self.tree))
+        print(json.dumps(self.tree, indent=2))
+
+    def parent(self, node_id):
+        return self.id_nodes[node_id].parent_id
+    
+    def sigma(self, node_id):
+        return self.id_nodes[node_id].sigma
+    
+    def node_sgn(self, node_id):
+        return self.id_nodes[node_id].sign 
+    
+    def F_pos(self):
+        return [id_n for id_n in self.id_nodes if self.node_sgn(id_n) == "pos"]
+
+    def F_neg(self):
+        return [id_n for id_n in self.id_nodes if self.node_sgn(id_n) == "neg"]
+
+    def show_signs(self):
+        return {k: v.sign for k,v in self.id_nodes.items()}
 
 
+class God:
+    def __init__(self, all_traces):
+        predicates = create_preds_vector(all_traces)
+
+        ev2binpr = event2binpreds(predicates)
+
+        self.arbol = make_tree(all_traces, ev2binpr)
+    
+    def give_me_the_plant(self):
+        return self.arbol
 
 def read_json(path):
     with open(path, "r") as json_file:
