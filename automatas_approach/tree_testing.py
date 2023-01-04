@@ -4,7 +4,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 eps = 0.2
-max_states = 3
+max_states = 7
 traces_path = {
     "A": "./test_traces/A_oPoN.json",
     "B": "./test_traces/B_oPmN.json",
@@ -13,7 +13,7 @@ traces_path = {
     "Z": "./test_traces/Z.json",
 }
 
-all_traces = read_json(traces_path["A"])
+all_traces = read_json(traces_path["D"])
 
 g = God(all_traces)
 arbol = g.give_me_the_plant()
@@ -33,7 +33,7 @@ if arbol.sat:
             print(i, f[i].X) if f[i].X > eps else None
         
         for q, s, qp in delta:
-            print(q,s,qp, delta[q, s, qp].X) if q != qp and delta[q, s, qp].X > eps else None
+            print(q,s,":",Sigma_dict[s],qp, delta[q, s, qp].X) if q != qp and delta[q, s, qp].X > eps else None
 
         # print(c)
         # print(x)

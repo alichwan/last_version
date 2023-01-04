@@ -124,8 +124,8 @@ def run_experiment(max_steps_trace: int, max_len_form: int, direct=False):
 
 ###########
 if __name__ == "__main__":
-    max_steps_trace = 15
-    max_len_form = 15
+    max_steps_trace = 50
+    max_len_form = 30
     print("Empiezan experimentos")
     results = run_experiment(max_steps_trace,max_len_form,  direct=False)
     print("Terminó experimentos")
