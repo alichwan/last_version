@@ -1,0 +1,7 @@
+.vscode/
+__pycache__/
+traces_ch/.vscode/
+traces_ch/__pycache__/
+*.txt
+traces_amano.lp
+theformula.lp
