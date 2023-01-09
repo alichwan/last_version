@@ -4,7 +4,7 @@ import numpy
 # from main import God, read_json, generate_trace
 
 
-def milp(arbol, max_states):
+def milp(arbol, max_states, verbose=1):
     #########mockup #################
     nodes = arbol.id_nodes
     Sigma_dict = {s: i for i, s in enumerate(arbol.Sigma)}
@@ -23,6 +23,7 @@ def milp(arbol, max_states):
 
     # modelo
     modelo = Model("Asignacion_de_estados")
+    modelo.Params.OutputFlag = verbose
 
     # variables
     x = modelo.addVars(N, Q, vtype=GRB.BINARY, name="x_nq") # nodo n es mapeado a estado q
@@ -79,31 +80,32 @@ def milp(arbol, max_states):
 # TODO, agarrar los nodos del estado y graficar con libreria el automata
 if __name__ == "__main__":
     p=2
-    # connections = read_json("../traces_ch/B6ByNegPMKs_connectivity.json")
-    # objects = read_json("../traces_ch/B6ByNegPMKs_objects.json")
+    print(os.listdir())
+    connections = read_json("./traces_ch/B6ByNegPMKs_connectivity.json")
+    objects = read_json("./traces_ch/B6ByNegPMKs_objects.json")
 
-    # all_traces = generate_trace(p, connections, objects)
+    all_traces = generate_trace(p, connections, objects)
 
 
-    # g = God(all_traces)
-    # arbol = g.give_me_the_plant()
+    g = God(all_traces)
+    arbol = g.give_me_the_plant()
 
-    # if arbol.sat:
-    #     modelo, x, delta, c, f = milp(arbol, max_states = 5)
+    if arbol.sat:
+        modelo, x, delta, c, f, rev_Sigma_dict = milp(arbol, max_states = 5)
 
-    #     if modelo.Status == 2:
-    #         # ver resultados    
-    #         for i in x :
-    #             if x[i].X > 0.2:
-    #                 print(i, x[i].X)
+        if modelo.Status == 2:
+            # ver resultados    
+            for i in x :
+                if x[i].X > 0.2:
+                    print(i, x[i].X)
 
-    #         for q,s,qp in delta:
-    #             if q != qp and delta[q,s,qp].X > 0.2:
-    #                 print(f"({q},{s},{qp}), {delta[q,s,qp].X}")
-    #     elif modelo.Status == 3:
-    #         print("Modelo insatisfacible, ID de status:", modelo.Status)
-    #     else:
-    #         print("Ststus id: ", modelo.Status )
+            for q,s,qp in delta:
+                if q != qp and delta[q,s,qp].X > 0.2:
+                    print(f"({q},{s},{qp}), {delta[q,s,qp].X}")
+        elif modelo.Status == 3:
+            print("Modelo insatisfacible, ID de status:", modelo.Status)
+        else:
+            print("Ststus id: ", modelo.Status )
 
-    # if not arbol.sat:
-    #     print("arbol insatisfacible")
+    if not arbol.sat:
+        print("arbol insatisfacible")

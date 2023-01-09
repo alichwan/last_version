@@ -1,22 +1,24 @@
 import numpy as np
 import pandas as pd
 import json
+import itertools
 
 
 class Node(object):
-    _id = 0
+    new_id = itertools.count()
 
     def __init__(self, parent_id=None, sigma=None):
-        self._id = Node._id
-        Node._id += 1
+        self._id = next(Node.new_id)
 
         self.parent_id = parent_id
         self.sigma = sigma
         self.sign = None
 
+    def reset(self):
+        Node.new_id = itertools.count(0)
+
 
 class PrefixTree:
-
     def __init__(self, traces, e2b):
         self.ev2binpr = e2b
         self.root = Node()
@@ -32,6 +34,7 @@ class PrefixTree:
                 self.new_trace(trace, sgn)
 
     def new_trace(self, trace, sign):
+        self.root.reset()
         actual_id = 0
         actual_dict = self.tree
         actual_node = self.id_nodes[actual_id]
@@ -67,13 +70,13 @@ class PrefixTree:
 
     def parent(self, node_id):
         return self.id_nodes[node_id].parent_id
-    
+
     def sigma(self, node_id):
         return self.id_nodes[node_id].sigma
-    
+
     def node_sgn(self, node_id):
-        return self.id_nodes[node_id].sign 
-    
+        return self.id_nodes[node_id].sign
+
     def F_pos(self):
         return [id_n for id_n in self.id_nodes if self.node_sgn(id_n) == "pos"]
 
@@ -81,7 +84,7 @@ class PrefixTree:
         return [id_n for id_n in self.id_nodes if self.node_sgn(id_n) == "neg"]
 
     def show_signs(self):
-        return {k: v.sign for k,v in self.id_nodes.items()}
+        return {k: v.sign for k, v in self.id_nodes.items()}
 
 
 class God:
@@ -91,9 +94,10 @@ class God:
         ev2binpr = event2binpreds(predicates)
 
         self.arbol = make_tree(all_traces, ev2binpr)
-    
+
     def give_me_the_plant(self):
         return self.arbol
+
 
 def read_json(path):
     with open(path, "r") as json_file:
@@ -194,4 +198,3 @@ if __name__ == "__main__":
     print(arbol.Sigma)
     print(arbol.id_nodes)
     # print(arbol.id_nodes[5].parent)
-

@@ -39,21 +39,29 @@ def theformula(nodes: list):
     return file_template
 
 
-def traces2formulas(traces_file, n_nodes, direct = False):
+def traces2formulas(traces_file, n_nodes, tries_limit=500, direct=False):
     valids = []
     if direct:
         lines = traces_file.split("\n")
-        lines = [ line.strip().strip("trace().") for line in lines if line.strip() != "" ]
+        lines = [
+            line.strip().strip("trace().")
+            for line in lines
+            if line.strip() != ""
+        ]
     else:
         with open(traces_file, "r") as traces:
             lines = traces.readlines()
-            lines = [ line.strip().strip("trace().") for line in lines if line.strip() != "" ]
+            lines = [
+                line.strip().strip("trace().")
+                for line in lines
+                if line.strip() != ""
+            ]
     preds_allowed = set()
     for line in lines:
         if not (line.startswith("pos") or line.startswith("neg")):
             preds_allowed.add(line.split(",")[1].strip())
-    dags_generator = generate_dag(n_nodes)
-    
+    dags_generator = generate_dag(n_nodes, tries_limit)
+
     for dag_id, dag in dags_generator:
         SATISFIABLE = False
         template_formula = theformula(dag)
@@ -66,27 +74,30 @@ def traces2formulas(traces_file, n_nodes, direct = False):
             formula_file.write(template_formula)
 
         while not os.path.exists("theformula.lp"):
-            time.sleep(0.5)   
+            time.sleep(0.5)
 
         start_counter_ns = time.perf_counter_ns()
         os.system(f"clingo theformula.lp main.lp -n 1 > solutions.txt")
-        
+
         while not os.path.exists("solutions.txt"):
             time.sleep(0.2)
-        
+
         with open("solutions.txt", "r") as solution_file:
             output = solution_file.readlines()
             if not ("UNSATISFIABLE\n" in output):
                 print("SATISFIABLE")
                 SATISFIABLE = True
-                index_answers = [ i + 1 for i in range(len(output)) if output[i].startswith("Answer") ]
+                index_answers = [
+                    i + 1
+                    for i in range(len(output))
+                    if output[i].startswith("Answer")
+                ]
                 # print(index_answers)
                 for j in index_answers:
                     valids.append(output[j])
             else:
                 print("UNSATISFIABLE")
         yield SATISFIABLE, dag_id, valids
-
 
 
 def run_experiment(max_steps_trace: int, max_len_form: int, direct=False):
@@ -104,9 +115,9 @@ def run_experiment(max_steps_trace: int, max_len_form: int, direct=False):
         traces_file = total_template if direct else "traces.lp"
         for L in range(2, max_len_form + 1):
             print(f"Trying with {p} trace steps and {L} nodes in formula")
-            formulas_generator = traces2formulas(traces_file, L, direct)
+            formulas_gen = traces2formulas(traces_file, L, direct=direct)
             start_counter_ns = time.perf_counter_ns()
-            for satisfiable, bin_num, valids in formulas_generator:
+            for satisfiable, bin_num, valids in formulas_gen:
                 if satisfiable:
                     end_counter_ns = time.perf_counter_ns()
                     timer_ns = end_counter_ns - start_counter_ns
@@ -114,10 +125,14 @@ def run_experiment(max_steps_trace: int, max_len_form: int, direct=False):
                     results.append((p, L, bin_num, timer_ns / (10**9)))
                     print(results)
                     with open("tiempos.txt", "a") as f:
-                        f.write(f"({p}, {L}, {bin_num}, {timer_ns / (10**9)})\n")
+                        f.write(
+                            f"({p}, {L}, {bin_num}, {timer_ns / (10**9)})\n"
+                        )
                     break
-            if trace_sat : 
-                print(f"Trace with {p} steps, satisfiable with {L} nodes and structure id {bin_num}")
+            if trace_sat:
+                print(
+                    f"Trace with {p} steps, satisfiable with {L} nodes and structure id {bin_num}"
+                )
                 break
     return results  # en caso de que llegue hasta el final
 
@@ -127,10 +142,9 @@ if __name__ == "__main__":
     max_steps_trace = 50
     max_len_form = 30
     print("Empiezan experimentos")
-    results = run_experiment(max_steps_trace,max_len_form,  direct=False)
+    results = run_experiment(max_steps_trace, max_len_form, direct=False)
     print("Terminó experimentos")
     print(results)
 
     if os.path.exists("solutions.txt"):
         os.remove("solutions.txt")
-

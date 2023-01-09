@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import json
+import os
+
 
 
 def read_json(path):
@@ -23,9 +25,11 @@ def random_walk(start: str, connections: dict, steps: int):
     pos_trace = []
     alternatives = []
     actual = start
+    previo = None
     pos_trace.append(actual)
     for step in range(steps):
-        options = connections[actual]
+        options = [op for op in connections[actual] if op != previo]
+        previo = actual
         actual = np.random.choice(options)
         pos_trace.append(actual)
         alternatives.append([op for op in options if op != actual])
@@ -62,7 +66,7 @@ def gen_traces_file(pos_trace: list, neg_traces: list, objects: dict):
 def check_trace(pos_trace: list, objects: dict):
     last_location = pos_trace[-1]
     last_elements = objects[last_location]
-    return bool(last_elements)
+    return len(last_elements) > 0
 
 
 def generate_trace(p: int, connections: dict, objects: dict):
@@ -77,13 +81,15 @@ def generate_trace(p: int, connections: dict, objects: dict):
 
 
 if __name__ == "__main__":
-    connections = read_json("B6ByNegPMKs_connectivity.json")
-    objects = read_json("B6ByNegPMKs_objects.json")
-    
-    p = 10
-    total_template = generate_trace(p, connections, objects)
+    currente = (os.curdir)
+    connections = read_json("./B6ByNegPMKs_connectivity.json")
+    objects = read_json("./B6ByNegPMKs_objects.json")
 
-    with open("traces.lp", "w") as file:
-        file.write(total_template)
+    p = 2
+    total_template = generate_trace(p, connections, objects)
+    print(total_template)
+
+    # with open("traces.lp", "w") as file:
+    #     file.write(total_template)
 
     # print(total_template)
