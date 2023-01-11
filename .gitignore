@@ -5,3 +5,5 @@ traces_ch/__pycache__/
 *.txt
 traces_amano.lp
 theformula.lp
+
+env/
