@@ -1,7 +1,7 @@
 # imports
 from gurobipy import *
 import numpy
-# from main import God, read_json, generate_trace
+from main import God, read_json, generate_trace
 
 
 def milp(arbol, max_states, verbose=1):

@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import json
 import os
+import logging
 
 
 
@@ -30,6 +31,9 @@ def random_walk(start: str, connections: dict, steps: int):
     for step in range(steps):
         options = [op for op in connections[actual] if op != previo]
         previo = actual
+        if not options:
+            logging.warning(f"Trace truncada por falta de opciones: {step}/{steps}")
+            break
         actual = np.random.choice(options)
         pos_trace.append(actual)
         alternatives.append([op for op in options if op != actual])

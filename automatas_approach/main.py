@@ -181,8 +181,8 @@ def make_tree(traces, e2b):
 
 
 if __name__ == "__main__":
-    connections = read_json("../traces_ch/B6ByNegPMKs_connectivity.json")
-    objects = read_json("../traces_ch/B6ByNegPMKs_objects.json")
+    connections = read_json("./traces_ch/B6ByNegPMKs_connectivity.json")
+    objects = read_json("./traces_ch/B6ByNegPMKs_objects.json")
     p = 2
 
     all_traces = generate_trace(p, connections, objects)
