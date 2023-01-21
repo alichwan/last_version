@@ -4,7 +4,6 @@ import pandas as pd
 import json
 import logging
 from time import perf_counter, sleep
-from dags import generate_dag
 from automatas_approach.main import God
 from automatas_approach.MILP import milp
 from main import traces2formulas
@@ -92,9 +91,11 @@ class ClingoExperiment:
         for n_nodes in range(2, self.max_dag_nodes + 1):
             print(f"Trying {n_nodes} nodes in formula")
             formulas_gen = traces2formulas(
-                "traces.lp", n_nodes, tries_limit=self.max_dag_tries
+                "traces.lp",
+                n_nodes,
+                tries_limit=self.max_dag_tries
             )
-            for satisfiable, bin_num, valids in formulas_gen:
+            for satisfiable, dag_id, valids in formulas_gen:
                 if satisfiable:
                     return "SAT"
         return "UNSAT"
@@ -141,7 +142,7 @@ class Experiment:
         objs_path: str,
         min_trace_steps=2,
         max_trace_steps=4,
-        negative_traces_case=1,
+        negative_traces_case=2,
         max_dag_nodes=4,
         max_dag_tries=200,
         max_automata_states=10,
@@ -173,8 +174,8 @@ class Experiment:
             self.gurobi_exp.run(traces_gur)
             time_gur_end = perf_counter()
 
-            cli_times.append(time_cli_start - time_cli_end)
-            gur_times.append(time_gur_start - time_gur_end)
+            cli_times.append(time_cli_end - time_cli_start)
+            gur_times.append(time_gur_end - time_gur_start)
 
         data = {
             "Traces steps": steps_range,
