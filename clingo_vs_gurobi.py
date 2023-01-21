@@ -266,20 +266,20 @@ class Experiment:
     
     def solve_case(self, traces_dict):
         traces_gur = traces_dict
-        print(traces_gur)
-        # pos_ts, neg_ts = traces_dict['pos'], traces_dict['neg']
-        # traces_cli = self.traces_to_lp_local(pos_ts, neg_ts)
+        # print(traces_gur)
+        pos_ts, neg_ts = traces_dict['pos'], traces_dict['neg']
+        traces_cli = self.traces_to_lp_local(pos_ts, neg_ts)
         # print(traces_cli)
 
-        # time_cli_start = perf_counter()
-        # print(self.clingo_exp.solve(traces_cli), end="\n")
-        # time_cli_end = perf_counter()
+        time_cli_start = perf_counter()
+        print(self.clingo_exp.solve(traces_cli), end="\n")
+        time_cli_end = perf_counter()
 
         time_gur_start = perf_counter()
         print(self.gurobi_exp.solve(traces_gur), end="\n")
         time_gur_end = perf_counter()
 
-        # print(f"tiempo clingo: {time_cli_end-time_cli_start} seconds")
+        print(f"tiempo clingo: {time_cli_end-time_cli_start} seconds")
         print(f"tiempo gurobi: {time_gur_end-time_gur_start} seconds")
 
 
