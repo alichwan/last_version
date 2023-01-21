@@ -1,4 +1,4 @@
-#include "traces_amano.lp".
+#include "traces.lp".
 
 
 % Los parámetros como id, var y time serán dependientes de las traces que entren en juego.

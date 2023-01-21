@@ -13,9 +13,7 @@ class Node(object):
         self.parent_id = parent_id
         self.sigma = sigma
         self.sign = None
-
-    def reset(self):
-        Node.new_id = itertools.count(0)
+        self.children = {}
 
 
 class PrefixTree:
@@ -23,7 +21,6 @@ class PrefixTree:
         self.ev2binpr = e2b
         self.root = Node()
         self.id_nodes = {0: self.root}
-        self.tree = {0: dict()}
         self.Sigma = set()
         self.sat = True
         self.process_traces(traces)
@@ -34,39 +31,49 @@ class PrefixTree:
                 self.new_trace(trace, sgn)
 
     def new_trace(self, trace, sign):
-        self.root.reset()
         actual_id = 0
-        actual_dict = self.tree
         actual_node = self.id_nodes[actual_id]
+        actual_dict = actual_node.children
         for event in trace:
             trace_key = self.ev2binpr(event)  # lo codificamos en sigma
             self.Sigma.add(trace_key)  # agregamos al alfabeto
-            partial_id = actual_dict[actual_id].get(trace_key)
+            partial_id = actual_dict.get(trace_key)  # conseguimos nodo
 
-            if partial_id != None:
-                actual_id = partial_id
-                actual_dict = actual_dict[actual_id]
-                actual_node = self.id_nodes[actual_id]
-            else:
+            if partial_id is None:
                 new_node = Node(parent_id=actual_node._id, sigma=trace_key)
                 new_id = new_node._id
                 self.id_nodes[new_id] = new_node
+                actual_dict[trace_key] = new_id
 
-                actual_node = self.id_nodes[new_id]
-
-                actual_dict[actual_id][new_id] = dict()
-                actual_dict = actual_dict[actual_id]
-
+                actual_node = new_node
+                actual_dict = actual_node.children
                 actual_id = new_id
+            else:
+                actual_node = self.id_nodes[partial_id]
+                actual_dict = actual_node.children
+                actual_id = partial_id
 
         if (actual_node.sign != sign) and (actual_node.sign is not None):
             print("INSATISFIABLE TREE FOR NODE SIGNS")
             print(actual_node.sign, sign)
+            node_id = actual_node._id
+            print(f"Signos no cuadran, camino:{self.find_treepath(node_id)}")
             self.sat = False
         actual_node.sign = sign
 
+    def find_treepath(self, node_id):
+        rev_treepath = []
+        rev_treepath.append(node_id)
+        node = self.id_nodes[node_id]
+        parent_id = node.parent_id
+        while parent_id:
+            rev_treepath.append(parent_id)
+            node = self.id_nodes[parent_id]
+            parent_id = node.parent_id
+        return list(reversed(rev_treepath))
+
     def print_tree(self):
-        print(json.dumps(self.tree, indent=2))
+        pass
 
     def parent(self, node_id):
         return self.id_nodes[node_id].parent_id
@@ -90,9 +97,7 @@ class PrefixTree:
 class God:
     def __init__(self, all_traces):
         predicates = create_preds_vector(all_traces)
-
         ev2binpr = event2binpreds(predicates)
-
         self.arbol = make_tree(all_traces, ev2binpr)
 
     def give_me_the_plant(self):
@@ -183,7 +188,7 @@ def make_tree(traces, e2b):
 if __name__ == "__main__":
     connections = read_json("./traces_ch/B6ByNegPMKs_connectivity.json")
     objects = read_json("./traces_ch/B6ByNegPMKs_objects.json")
-    p = 2
+    p = 4
 
     all_traces = generate_trace(p, connections, objects)
     predicates = create_preds_vector(all_traces)

@@ -12,6 +12,7 @@ from traces_ch.trace_generator import (
     alternative_traces,
     traces_to_objects,
     gen_traces_file,
+    objects_to_str
 )
 
 
@@ -82,6 +83,25 @@ class ClingoExperiment:
         self.max_dag_nodes = max_dag_nodes
         self.max_dag_tries = max_dag_tries
 
+    def solve(self, traces_str):
+        logging.debug("Running Clingo")
+        with open("traces.lp", "w") as file:
+            file.write(traces_str)
+        while not os.path.exists("traces.lp"):
+            sleep(0.2)
+        for n_nodes in range(2, self.max_dag_nodes + 1):
+            print(f"Trying {n_nodes} nodes in formula")
+            formulas_gen = traces2formulas(
+                "traces.lp",
+                n_nodes,
+                tries_limit=self.max_dag_tries
+            )
+            for satisfiable, dag_id, valids in formulas_gen:
+                if satisfiable:
+                    with open("solutions.txt", "r") as solution_file:
+                        return solution_file.readlines()
+        return "UNSAT"
+
     def run(self, traces_str):
         logging.debug("Running Clingo")
         with open("traces.lp", "w") as file:
@@ -106,6 +126,42 @@ class GurobiExperiment:
         logging.debug("Initializing GurobiExperiment")
         self.max_automata_states = max_automata_states
 
+    def solve(self, traces):
+        logging.debug("Running Gurobi")
+        logging.debug("Creando a Dios")
+        g = God(traces)
+        logging.debug("Generando arbol")
+        arbol = g.give_me_the_plant()
+
+        if not arbol.sat:
+            return "UNSAT"
+
+        assert arbol.id_nodes[0]._id == 0
+        logging.debug("Arbol satisfacible")
+        modelo, x, delta, c, f, rev_Sigma_dict = milp(arbol, 5, 0)
+        logging.debug("Resolvio el MILP")
+
+        if modelo.Status == 2:
+            # ver resultados
+            res = ""
+            for i in x :
+                if x[i].X > 0.2:
+                    res += f"{(i, x[i].X)}\n"
+            for q,s,qp in delta:
+                if q != qp and delta[q,s,qp].X > 0.2:
+                    res += f"({q},{s},{qp}), {delta[q,s,qp].X}\n"
+            arbol.print_tree()
+            print(arbol.sat)
+            print(arbol.Sigma)
+            print(arbol.id_nodes)
+            print(arbol.show_signs())
+            return res
+        elif modelo.Status == 3:
+            print("Modelo insatisfacible, ID de status:", modelo.Status)
+            return "UNSAT"
+        else:
+            raise ValueError("Status of MILP model get id: ", modelo.Status)
+
     def run(self, traces):
         logging.debug("Running Gurobi")
         logging.debug("Creando a Dios")
@@ -113,26 +169,28 @@ class GurobiExperiment:
         logging.debug("Generando arbol")
         arbol = g.give_me_the_plant()
 
-        if arbol.sat:
-            assert arbol.id_nodes[0]._id == 0
-            logging.debug("Arbol satisfacible")
-            modelo, x, delta, c, f, rev_Sigma_dict = milp(arbol, 5, 0)
-            logging.debug("Resolvio el MILP")
+        if not arbol.sat:
+            return "UNSAT"
 
-            if modelo.Status == 2:
-                # ver resultados
-                # for i in x :
-                #     if x[i].X > 0.2:
-                #         print(i, x[i].X)
-                # for q,s,qp in delta:
-                #     if q != qp and delta[q,s,qp].X > 0.2:
-                #         print(f"({q},{s},{qp}), {delta[q,s,qp].X}")
-                return "SAT"
-            elif modelo.Status == 3:
-                print("Modelo insatisfacible, ID de status:", modelo.Status)
-                return "UNSAT"
-            else:
-                print("Ststus id: ", modelo.Status)
+        assert arbol.id_nodes[0]._id == 0
+        logging.debug("Arbol satisfacible")
+        modelo, x, delta, c, f, rev_Sigma_dict = milp(arbol, 5, 0)
+        logging.debug("Resolvio el MILP")
+
+        if modelo.Status == 2:
+            # ver resultados
+            # for i in x :
+            #     if x[i].X > 0.2:
+            #         print(i, x[i].X)
+            # for q,s,qp in delta:
+            #     if q != qp and delta[q,s,qp].X > 0.2:
+            #         print(f"({q},{s},{qp}), {delta[q,s,qp].X}")
+            return "SAT"
+        elif modelo.Status == 3:
+            print("Modelo insatisfacible, ID de status:", modelo.Status)
+            return "UNSAT"
+        else:
+            raise ValueError("Status of MILP model get id: ", modelo.Status)
 
 
 class Experiment:
@@ -191,6 +249,38 @@ class Experiment:
         )
         df_results["difference [s]"] = abs(difference)
         return df_results
+
+    def traces_to_lp_local(self, pos_traces, neg_traces):
+        """
+        Here is broken the abstraction for a specific case
+        """
+        total_template = ""
+        counter_id = 0
+        for pos_trace in pos_traces:
+            counter_id += 1
+            total_template += objects_to_str(pos_trace, counter_id, "pos")
+        for neg_trace in neg_traces:
+            counter_id += 1
+            total_template += objects_to_str(neg_trace, counter_id, "neg")
+        return total_template.strip()
+    
+    def solve_case(self, traces_dict):
+        traces_gur = traces_dict
+        print(traces_gur)
+        # pos_ts, neg_ts = traces_dict['pos'], traces_dict['neg']
+        # traces_cli = self.traces_to_lp_local(pos_ts, neg_ts)
+        # print(traces_cli)
+
+        # time_cli_start = perf_counter()
+        # print(self.clingo_exp.solve(traces_cli), end="\n")
+        # time_cli_end = perf_counter()
+
+        time_gur_start = perf_counter()
+        print(self.gurobi_exp.solve(traces_gur), end="\n")
+        time_gur_end = perf_counter()
+
+        # print(f"tiempo clingo: {time_cli_end-time_cli_start} seconds")
+        print(f"tiempo gurobi: {time_gur_end-time_gur_start} seconds")
 
 
 if __name__ == "__main__":
