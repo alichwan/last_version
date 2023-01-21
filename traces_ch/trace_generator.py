@@ -29,7 +29,9 @@ def random_walk(start: str, connections: dict, steps: int):
     previo = None
     pos_trace.append(actual)
     for step in range(steps):
-        options = [op for op in connections[actual] if op != previo]
+        #implementación actual: tomar todos los nodos posibles aunque este devolviendose, 
+        #pues así se minimiza el caso de no tener la trace con la cantidad pedida de steps
+        options = connections[actual] #[op for op in connections[actual] if op != previo]
         previo = actual
         if not options:
             logging.warning(f"Trace truncada por falta de opciones: {step}/{steps}")
@@ -37,7 +39,7 @@ def random_walk(start: str, connections: dict, steps: int):
         actual = np.random.choice(options)
         pos_trace.append(actual)
         alternatives.append([op for op in options if op != actual])
-    for i in range(1, len(pos_trace)):
+    for i in range(1, len(pos_trace)): 
         alternatives.append(pos_trace[:i])
     return pos_trace, alternatives
 

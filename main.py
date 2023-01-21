@@ -2,6 +2,7 @@ import os
 import time
 import numpy as np
 import json
+import logging
 from dags import generate_dag
 from traces_ch.trace_generator import generate_trace
 from itertools import combinations_with_replacement as combi
@@ -56,10 +57,10 @@ def traces2formulas(traces_file, n_nodes, tries_limit=500, direct=False):
                 for line in lines
                 if line.strip() != ""
             ]
-    preds_allowed = set()
-    for line in lines:
-        if not (line.startswith("pos") or line.startswith("neg")):
-            preds_allowed.add(line.split(",")[1].strip())
+    # preds_allowed = set()
+    # for line in lines:
+    #     if not (line.startswith("pos") or line.startswith("neg")):
+    #         preds_allowed.add(line.split(",")[1].strip())
     dags_generator = generate_dag(n_nodes, tries_limit)
 
     for dag_id, dag in dags_generator:
@@ -71,6 +72,7 @@ def traces2formulas(traces_file, n_nodes, tries_limit=500, direct=False):
             os.remove("solutions.txt")
 
         with open("theformula.lp", "w") as formula_file:
+            logging.info(f"Escribiendo formula en archivo:\n{template_formula}")
             formula_file.write(template_formula)
 
         while not os.path.exists("theformula.lp"):
