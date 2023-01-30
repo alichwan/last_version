@@ -21,6 +21,7 @@ class PrefixTree:
         self.ev2binpr = e2b
         self.root = Node()
         self.id_nodes = {0: self.root}
+        self.Sigma_simbol = dict()
         self.Sigma = set()
         self.sat = True
         self.process_traces(traces)
@@ -37,6 +38,7 @@ class PrefixTree:
         for event in trace:
             trace_key = self.ev2binpr(event)  # lo codificamos en sigma
             self.Sigma.add(trace_key)  # agregamos al alfabeto
+            self.Sigma_simbol[trace_key] = event
             partial_id = actual_dict.get(trace_key)  # conseguimos nodo
 
             if partial_id is None:

@@ -3,8 +3,8 @@ from MILP import milp
 import networkx as nx
 import matplotlib.pyplot as plt
 
-eps = 0.2
-max_states = 7
+EPS = 0.2
+MAX_STATES = 7
 traces_path = {
     "A": "./test_traces/A_oPoN.json",
     "B": "./test_traces/B_oPmN.json",
@@ -20,7 +20,7 @@ arbol = g.give_me_the_plant()
 
 
 if arbol.sat:
-    modelo, x, delta, c, f, Sigma_dict = milp(arbol, max_states=max_states)
+    modelo, x, delta, c, f, Sigma_dict = milp(arbol, max_states=MAX_STATES)
     if modelo.Status == 2:
         G = nx.DiGraph()
         color_map = ["white" for q in f]

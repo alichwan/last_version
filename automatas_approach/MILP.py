@@ -1,18 +1,17 @@
 # imports
 from gurobipy import *
-import numpy
 # from main import God, read_json, generate_trace
 
 
-def milp(arbol, max_states, verbose=1):
-    #########mockup #################
+def milp(arbol, max_states, verbose=0):
+    ##########################
     nodes = arbol.id_nodes
     Sigma_dict = {s: i for i, s in enumerate(arbol.Sigma)}
     rev_Sigma_dict = {i:s for s, i in Sigma_dict.items()}
     states = {i: None for i in range(max_states)}
-    #########mockup #################
+    ##########################
 
-    # número de nodos del arbol
+    # número de nodos del arbolP
     N = range(len(nodes))
     # conjunto de
     Sigma_range = range(len(Sigma_dict))
@@ -22,24 +21,24 @@ def milp(arbol, max_states, verbose=1):
     root = 0
 
     # modelo
-    modelo = Model("Asignacion_de_estados")
-    modelo.Params.OutputFlag = verbose
+    model = Model("Asignacion_de_estados")
+    model.Params.OutputFlag = verbose
 
     # variables
-    x = modelo.addVars(N, Q, vtype=GRB.BINARY, name="x_nq") # nodo n es mapeado a estado q
-    delta = modelo.addVars(Q, Sigma_range, Q, vtype=GRB.BINARY, name="delta_qnq") # funcion de trancicion de automata
-    f = modelo.addVars(Q, vtype=GRB.BINARY, name="f_q") # 1 ssi estado q es usado 
-    c = modelo.addVar(vtype=GRB.CONTINUOUS, name="c") # funcion de costo auxiliar
+    x = model.addVars(N, Q, vtype=GRB.BINARY, name="x_nq") # nodo n es mapeado a estado q
+    delta = model.addVars(Q, Sigma_range, Q, vtype=GRB.BINARY, name="delta_qnq") # funcion de trancicion de automata
+    f = model.addVars(Q, vtype=GRB.BINARY, name="f_q") # 1 ssi estado q es usado 
+    c = model.addVar(vtype=GRB.CONTINUOUS, name="c") # funcion de costo auxiliar
 
-    ## instanciar modelo
+    ## instanciar model
     ## restricciones (1)
-    r_1 = modelo.addConstrs(
+    r_1 = model.addConstrs(
         (quicksum(x[n, q] for q in Q) == 1 for n in N), name="R(1)"
     )
     ## restriccion (2)
-    r_2 = modelo.addConstr((x[root, 0] == 1), name="R(2)")
+    r_2 = model.addConstr((x[root, 0] == 1), name="R(2)")
     ## restricciones (3)
-    r_3 = modelo.addConstrs(
+    r_3 = model.addConstrs(
         (
             quicksum(delta[q, sigma, qp] for qp in Q) == 1
             for sigma in Sigma_range
@@ -49,7 +48,7 @@ def milp(arbol, max_states, verbose=1):
     )
 
     # # ## restricciones (5)
-    r_5 = modelo.addConstrs(
+    r_5 = model.addConstrs(
         (
             x[arbol.parent(n), q] + x[n, qp] - 1
             <= delta[q, Sigma_dict[arbol.sigma(n)], qp]
@@ -61,26 +60,25 @@ def milp(arbol, max_states, verbose=1):
     )
 
     # Restriccion adicional para el indice
-    r_0 = modelo.addConstrs((q * x[n, q] <= c for n in N for q in Q), name="R(0)")
-    # r_0 = modelo.addConstrs((q * f[q] <= c for q in Q), name="R(0)")
+    r_0 = model.addConstrs((q * x[n, q] <= c for n in N for q in Q), name="R(0)")
+    # r_0 = model.addConstrs((q * f[q] <= c for q in Q), name="R(0)")
 
     # Restriccion para forzar a rechazar los negativos y aceptar los positivos
-    modelo.addConstrs((x[n, q] <= f[q]  for q in Q for n in arbol.F_pos()), name="aceptacion pos")
-    modelo.addConstrs((x[n, q] <= 1-f[q]  for q in Q for n in arbol.F_neg()), name="aceptacion neg")
+    model.addConstrs((x[n, q] <= f[q]  for q in Q for n in arbol.F_pos()), name="aceptacion pos")
+    model.addConstrs((x[n, q] <= 1-f[q]  for q in Q for n in arbol.F_neg()), name="aceptacion neg")
 
     # setear funcion objetivo
-    modelo.setObjective(c, GRB.MINIMIZE)
+    model.setObjective(c, GRB.MINIMIZE)
 
     # optimizar
-    modelo.optimize()
-    return modelo, x, delta, c, f, rev_Sigma_dict
+    model.optimize()
+    return model, x, delta, c, f, rev_Sigma_dict
 
 
 
 # TODO, agarrar los nodos del estado y graficar con libreria el automata
 if __name__ == "__main__":
     p=2
-    print(os.listdir())
     connections = read_json("./traces_ch/B6ByNegPMKs_connectivity.json")
     objects = read_json("./traces_ch/B6ByNegPMKs_objects.json")
 

@@ -12,7 +12,7 @@ from traces_ch.trace_generator import (
     alternative_traces,
     traces_to_objects,
     gen_traces_file,
-    objects_to_str
+    objects_to_str,
 )
 
 
@@ -92,9 +92,7 @@ class ClingoExperiment:
         for n_nodes in range(2, self.max_dag_nodes + 1):
             print(f"Trying {n_nodes} nodes in formula")
             formulas_gen = traces2formulas(
-                "traces.lp",
-                n_nodes,
-                tries_limit=self.max_dag_tries
+                "traces.lp", n_nodes, tries_limit=self.max_dag_tries
             )
             for satisfiable, dag_id, valids in formulas_gen:
                 if satisfiable:
@@ -111,9 +109,7 @@ class ClingoExperiment:
         for n_nodes in range(2, self.max_dag_nodes + 1):
             print(f"Trying {n_nodes} nodes in formula")
             formulas_gen = traces2formulas(
-                "traces.lp",
-                n_nodes,
-                tries_limit=self.max_dag_tries
+                "traces.lp", n_nodes, tries_limit=self.max_dag_tries
             )
             for satisfiable, dag_id, valids in formulas_gen:
                 if satisfiable:
@@ -126,7 +122,7 @@ class GurobiExperiment:
         logging.debug("Initializing GurobiExperiment")
         self.max_automata_states = max_automata_states
 
-    def solve(self, traces):
+    def solve(self, traces, verbose=0):
         logging.debug("Running Gurobi")
         logging.debug("Creando a Dios")
         g = God(traces)
@@ -138,31 +134,32 @@ class GurobiExperiment:
 
         assert arbol.id_nodes[0]._id == 0
         logging.debug("Arbol satisfacible")
-        modelo, x, delta, c, f, rev_Sigma_dict = milp(arbol, 5, 0)
+        modelo, x, delta, c, f, rev_Sigma_dict = milp(arbol, self.max_automata_states, verbose)
         logging.debug("Resolvio el MILP")
 
         if modelo.Status == 2:
             # ver resultados
             res = ""
-            for i in x :
-                if x[i].X > 0.2:
-                    res += f"{(i, x[i].X)}\n"
-            for q,s,qp in delta:
-                if q != qp and delta[q,s,qp].X > 0.2:
-                    res += f"({q},{s},{qp}), {delta[q,s,qp].X}\n"
+            for nodestate in x:
+                if x[nodestate].X > 0.2:
+                    res += f"N({nodestate[0]}) -> S({nodestate[1]})\n"
+            for q, s, qp in delta:
+                if q != qp and delta[q, s, qp].X > 0.2:
+                    res += f" S({q}) -{arbol.Sigma_simbol[rev_Sigma_dict[s]]}-> S({qp})\n"
             arbol.print_tree()
             print(arbol.sat)
             print(arbol.Sigma)
             print(arbol.id_nodes)
             print(arbol.show_signs())
-            return res
+            print(res)
+            return modelo, x, delta, c, f, rev_Sigma_dict, arbol
         elif modelo.Status == 3:
             print("Modelo insatisfacible, ID de status:", modelo.Status)
             return "UNSAT"
         else:
             raise ValueError("Status of MILP model get id: ", modelo.Status)
 
-    def run(self, traces):
+    def run(self, traces, verbose=0):
         logging.debug("Running Gurobi")
         logging.debug("Creando a Dios")
         g = God(traces)
@@ -174,7 +171,7 @@ class GurobiExperiment:
 
         assert arbol.id_nodes[0]._id == 0
         logging.debug("Arbol satisfacible")
-        modelo, x, delta, c, f, rev_Sigma_dict = milp(arbol, 5, 0)
+        modelo, x, delta, c, f, rev_Sigma_dict = milp(arbol, self.max_automata_states, verbose)
         logging.debug("Resolvio el MILP")
 
         if modelo.Status == 2:
@@ -263,24 +260,25 @@ class Experiment:
             counter_id += 1
             total_template += objects_to_str(neg_trace, counter_id, "neg")
         return total_template.strip()
-    
+
     def solve_case(self, traces_dict):
         traces_gur = traces_dict
         # print(traces_gur)
-        pos_ts, neg_ts = traces_dict['pos'], traces_dict['neg']
+        pos_ts, neg_ts = traces_dict["pos"], traces_dict["neg"]
         traces_cli = self.traces_to_lp_local(pos_ts, neg_ts)
         # print(traces_cli)
 
         time_cli_start = perf_counter()
-        print(self.clingo_exp.solve(traces_cli), end="\n")
+        # print(self.clingo_exp.solve(traces_cli), end="\n")
         time_cli_end = perf_counter()
 
         time_gur_start = perf_counter()
-        print(self.gurobi_exp.solve(traces_gur), end="\n")
+        modelo, x, delta, c, f, Sigma_dict, arbol = self.gurobi_exp.solve(traces_gur)
         time_gur_end = perf_counter()
 
         print(f"tiempo clingo: {time_cli_end-time_cli_start} seconds")
         print(f"tiempo gurobi: {time_gur_end-time_gur_start} seconds")
+        return modelo, x,delta, c, f, Sigma_dict, arbol
 
 
 if __name__ == "__main__":
@@ -293,7 +291,7 @@ if __name__ == "__main__":
         min_trace_steps=3,
         max_trace_steps=40,
         negative_traces_case=1,
-        max_dag_nodes=10,
+        max_dag_nodes=6,
         max_dag_tries=5000,
         max_automata_states=10,
     )
