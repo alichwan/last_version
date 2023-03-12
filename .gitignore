@@ -11,3 +11,4 @@ theformula.lp
 traces.lp
 
 env/
+.dependencygraph/

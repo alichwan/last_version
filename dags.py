@@ -1,5 +1,5 @@
-import numpy as np
 import random as rd
+import numpy as np
 import pickle
 
 def is_valid(mat):
