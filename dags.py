@@ -1,66 +1,84 @@
+"""
+Module dedicated to create directed acyclic graphs
+"""
 import random as rd
 import numpy as np
-import pickle
+
 
 def is_valid(mat):
+    """
+    Function that checks wether a matrix is valid to be used as a dag
+    """
     return (
         np.count_nonzero(mat, axis=0).max() <= 2
         and np.count_nonzero(mat, axis=1)[:-1].min() >= 1
     )
 
 
-def generate_list(dim_list, tries_limit):
+def generate_list(dim_list):
+    """
+    Function that returns a list of
+    """
     # contar en binario de 0 hasta 2^(dim_list) -1
-    for n in range(2**dim_list):
-        bin_str = bin(n)[2:]
-        bin_str = bin_str.rjust(int(dim_list), "0")
-        yield n, list(bin_str)
+    for number in range(2**dim_list):  # EXPONENTIAL WARNING
+        bin_str = bin(number)[2:].rjust(int(dim_list), "0")
+        yield number, list(bin_str)
 
 
-
-def generate_matrix(d: float, tries_limit):
-    # vector de dim 1+2+...+(d-1) = (d-1)*d/2
-    dim_list = int((d - 1) * d / 2)
-    list_generator = generate_list(dim_list, tries_limit)
+def generate_matrix(dim: float, tries_limit):
+    """
+    Function
+    """
+    # vector de dim 1+2+...+(dim-1) = (dim-1)*dim/2
+    dim_list = int((dim - 1) * dim / 2)
+    list_generator = generate_list(dim_list)
     tries = 0
     for id_list, filled_list in list_generator:
-        c = 0
-        mat = np.zeros([d, d], dtype=int)
-        for i in range(0, d - 1):
-            for j in range(i + 1, d):
-                mat[i, j] = filled_list[c]
-                c += 1
+        counter = 0
+        mat = np.zeros([dim, dim], dtype=int)
+        for i in range(0, dim - 1):
+            for j in range(i + 1, dim):
+                mat[i, j] = filled_list[counter]
+                counter += 1
         if is_valid(mat):
             tries += 1
-            print(f"van {tries} intentos validos de {min(tries_limit, 2**dim_list)} para {d} nodos")
+            show = min(tries_limit, 2**dim_list)
+            print(tries_limit, 2**dim_list)
+            print(f"van {tries} intentos validos de {show} para {dim} nodos")
             yield id_list, mat
         if tries >= tries_limit:
             break
 
 
-def generate_random_matrix(d: int):
-    m = np.zeros([d, d], dtype=int)
+def generate_random_matrix(dim: int):
+    """
+    Function
+    """
+    matrix = np.zeros([dim, dim], dtype=int)
     valid = False
     while not valid:
-        for i in range(d - 1):
-            rnd_i = rd.sample(range(i + 1, d), 1)
-            m[i, rnd_i] = 1
-        if is_valid(m):
+        for i in range(dim - 1):
+            rnd_i = rd.sample(range(i + 1, dim), 1)
+            matrix[i, rnd_i] = 1
+        if is_valid(matrix):
             valid = True
-    return m
+    return matrix
 
 
-def generate_trivial_matrix(d: int):
+def generate_trivial_matrix(dim: int):
     """
     Solo tendrá 1 predicado y los operadores serán unitarios y anidados
     """
-    m = np.zeros([d, d], dtype=int)
-    for i in range(d - 1):
-        m[i, i + 1] = 1
-    return m
+    matrix = np.zeros([dim, dim], dtype=int)
+    for i in range(dim - 1):
+        matrix[i, i + 1] = 1
+    return matrix
 
 
 def matrix2graph(mat):
+    """
+    Function
+    """
     nodes = [
         (0, 0),
     ]
@@ -75,14 +93,12 @@ def matrix2graph(mat):
     return nodes
 
 
-def generate_dag(d: int, tries_limit = 500):
-    matrix_generator = generate_matrix(d, tries_limit)
-    for id_mat, mat in matrix_generator:
-        yield id_mat, matrix2graph(mat)
-
-def precompute_dags(max_nodes = 10, tries_limit = 500):
+def precompute_dags(max_nodes=10, tries_limit=500):
+    """
+    Function
+    """
     valid_dags = dict()
-    for n_nodes in range(2, max_nodes+1):
+    for n_nodes in range(2, max_nodes + 1):
         dags_generator = generate_dag(n_nodes, tries_limit)
         valid_dags[n_nodes] = dict()
         for dag_id, dag in dags_generator:
@@ -91,8 +107,17 @@ def precompute_dags(max_nodes = 10, tries_limit = 500):
     return valid_dags
 
 
+def generate_dag(dim: int, tries_limit=500):
+    """
+    Function
+    """
+    matrix_generator = generate_matrix(dim, tries_limit)
+    for id_mat, mat in matrix_generator:
+        yield id_mat, matrix2graph(mat)
+
+
 if __name__ == "__main__":
-    L = 8 # -> va a estar haciendo 268.435.456 dags 
+    L = 8  # -> va a estar haciendo 268.435.456 dags
 
     gen_mats = generate_dag(L)
     for m in gen_mats:
@@ -104,4 +129,4 @@ if __name__ == "__main__":
     #     pickle.dump(dags, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     # with open(f"dags_to_{L}.pickle", "rb") as handle:
-    #     print("cargado:\n", pickle.load(handle)) 
+    #     print("cargado:\n", pickle.load(handle))

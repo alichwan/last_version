@@ -111,21 +111,18 @@ def pos_negs_traces(trace_steps: int, connections: dict, objects: dict):
     return pos_trace, neg_traces
 
 
-def generate_trace_clingo(trace_steps: int, connections: dict, objects: dict):
+def generate_trace_clingo(pos_trace, neg_traces, objects: dict):
     """
-    Function that generates a template of traces given connections and a number
-    of steps
+    Function that generates a template of traces given a list-format traces
     """
-    pos_trace, neg_traces = pos_negs_traces(trace_steps, connections, objects)
     return gen_template_clingo(pos_trace, neg_traces, objects)
 
 
-def generate_trace_gurobi(trace_steps: int, connections: dict, objects: dict):
+def generate_trace_gurobi(pos_trace, neg_traces, objects: dict):
     """
-    Function that generates a dictionary of traces given connections and a number
-    of steps
+    Function that generates a dictionary of traces given connections and a
+    number of steps
     """
-    pos_trace, neg_traces = pos_negs_traces(trace_steps, connections, objects)
     return gen_traces_dict(pos_trace, neg_traces, objects)
 
 
@@ -151,6 +148,16 @@ def read_traces_file(traces_file_path: str):
         lines = traces.readlines()
         lines = [line.strip("trace(). \n") for line in lines if line.strip()]
         return lines
+
+
+def get_graphs_from_id(room_id: str) -> (dict, dict):
+    """
+    Function that given a room id try to get the connection and object
+    graphs if exists in the folder.
+    """
+    connections = read_json(f"traces_ch/{room_id}_connectivity.json")
+    objects = read_json(f"traces_ch/{room_id}_objects.json")
+    return connections, objects
 
 
 if __name__ == "__main__":

@@ -3,12 +3,13 @@ Module with the clingo-logic
 """
 
 import os
+from time import sleep
 import numpy as np
 from dags import generate_dag
 from xxtraces_tools import generate_trace_clingo
 
 
-def theformula(nodes: list):
+def theformula(nodes: list) -> str:
     """
     Function
     """
@@ -51,52 +52,59 @@ def check_sat(valids) -> (bool, list):
             valids.append(output[j])
         return True, valids
     print("UNSATISFIABLE")
+    print(output)
     return False, valids
 
 
-def traces_to_file(trace_steps: int, connections: dict, objects: dict) -> None:
+def traces_to_file(traces_template: str) -> None:
     """
-    Function that given traces write a file to be processed by clingo
+    Function that writes a lp file with traces to be processed by clingo
     """
-    total_template = generate_trace_clingo(trace_steps, connections, objects)
     with open("traces.lp", "w", encoding="utf-8") as file:
-        file.write(total_template)
+        file.write(traces_template)
 
 
 def formula_to_file(template_formula: str):
     """
-    Function that given a formula write a file to be processed by clingo
+    Function that writes a lp file with the formula to be processed by clingo
     """
     with open("theformula.lp", "w", encoding="utf-8") as formula_file:
         formula_file.write(template_formula)
 
 
 def traces2formulas(
-    n_dag_nodes: int,
-    trace_steps: int,
-    connections: dict,
-    objects: dict,
+    traces_template: str,
+    max_n_dag_nodes: int,
     tries_limit=500,
 ):
     """
     Main function
+    Input:
+        max_n_dag_nodes: max number of predicates that should have the formula
+        trace_steps: number of steps that the random walk should have
+
     """
-    dags_generator = generate_dag(n_dag_nodes, tries_limit)
-    traces_to_file(trace_steps, connections, objects)
+    for n_dag_nodes in range(2, max_n_dag_nodes + 1):
+        dags_generator = generate_dag(n_dag_nodes, tries_limit)
 
-    valids = []
-    for dag_id, dag in dags_generator:
-        template_formula = theformula(dag)
-        formula_to_file(template_formula)
+        traces_to_file(traces_template)
 
-        if os.path.exists("solutions.txt"):
-            os.remove("solutions.txt")
+        valids = []
+        for dag_id, dag in dags_generator:
+            formula_to_file(theformula(dag))
+            sleep(0.2)
 
-        os.system("clingo theformula.lp main.lp -n 1 > solutions.txt")
-        # while not os.path.exists("solutions.txt"):
-        #     time.sleep(0.2)
-        satisfiable, valids = check_sat(valids)
-        yield satisfiable, dag_id, valids
+            if os.path.exists("solutions.txt"):
+                os.remove("solutions.txt")
+            os.system("clingo theformula.lp main.lp -n 1 > solutions.txt")
+            # while not os.path.exists("solutions.txt"):
+            #     time.sleep(0.2)
+            satisfiable, valids = check_sat(valids)
+            if satisfiable:
+                os.remove("solutions.txt")
+                return True, dag_id, valids
+        os.remove("solutions.txt")
+    return False, -1, []
 
 
 if __name__ == "__main__":

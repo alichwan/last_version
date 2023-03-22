@@ -17,7 +17,7 @@ class Node(object):
         """
         Function
         """
-        self._id = next(Node.new_id)
+        self.node_id = next(Node.new_id)
 
         self.parent_id = parent_id
         self.sigma = sigma
@@ -27,7 +27,8 @@ class Node(object):
 
 class PrefixTree:
     """
-    Function
+    Prefix Tree that codes the traces. The nodes could be positive, negatives
+    or None depending on the sign of the trace.
     """
 
     def __init__(self, traces, e2b):
@@ -61,8 +62,8 @@ class PrefixTree:
             partial_id = actual_dict.get(trace_key)  # conseguimos nodo
 
             if partial_id is None:
-                new_node = Node(parent_id=actual_node._id, sigma=trace_key)
-                new_id = new_node._id
+                new_node = Node(parent_id=actual_node.node_id, sigma=trace_key)
+                new_id = new_node.node_id
                 self.id_nodes[new_id] = new_node
                 actual_dict[trace_key] = new_id
 
@@ -77,7 +78,7 @@ class PrefixTree:
         if (actual_node.sign != sign) and (actual_node.sign is not None):
             print("INSATISFIABLE TREE FOR NODE SIGNS")
             print(actual_node.sign, sign)
-            node_id = actual_node._id
+            node_id = actual_node.node_id
             print(f"Signos no cuadran, camino:{self.find_treepath(node_id)}")
             self.sat = False
         actual_node.sign = sign
@@ -143,10 +144,10 @@ class God:
     Function
     """
 
-    def __init__(self, all_traces):
-        predicates = create_preds_vector(all_traces)
+    def __init__(self, traces):
+        predicates = create_preds_vector(traces)
         ev2binpr = event2binpreds(predicates)
-        self.arbol = make_tree(all_traces, ev2binpr)
+        self.arbol = PrefixTree(traces, ev2binpr)
 
     def give_me_the_plant(self):
         """
@@ -155,13 +156,37 @@ class God:
         return self.arbol
 
 
-def create_preds_vector(all_traces):
+class Automata:
+    """
+    Automata class that encapsulates the information of
+    the milp solution
+    """
+
+    def __init__(self, delta, is_used, rev_sigma_dict):
+        self.delta = delta
+        self.is_used = is_used
+        self.rev_sigma_dict = rev_sigma_dict
+        print("is used", is_used)
+        print("rev sigma", rev_sigma_dict)
+
+    def process_trace(self, traces_dict: dict):
+        """
+        Module that process a trace and return if its a positive, negative or
+        unsigned trace
+        """
+        for sgn, traces in traces_dict.items():
+            print(sgn, ":")
+            for trace in traces:
+                print(trace)
+
+
+def create_preds_vector(traces):
     """
     Function
     """
     predicates = set()
     for sgn in ["pos", "neg"]:
-        for trace in all_traces[sgn]:
+        for trace in traces[sgn]:
             for event in trace:
                 predicates = predicates.union(set(event))
     return tuple(predicates)
@@ -178,24 +203,16 @@ def event2binpreds(predicates):
     return e2b
 
 
-def make_tree(traces, e2b):
+def milp(tree, max_states, verbose=0):
     """
     Function
     """
-    tree = PrefixTree(traces, e2b)
-    return tree
-
-
-def milp(arbol, max_states, verbose=0):
-    """
-    Function
-    """
-    nodes = arbol.id_nodes
-    sigma_dict = {s: i for i, s in enumerate(arbol.Sigma)}
+    nodes = tree.id_nodes
+    sigma_dict = {s: i for i, s in enumerate(tree.Sigma)}
     rev_sigma_dict = {i: s for s, i in sigma_dict.items()}
     states = {i: None for i in range(max_states)}
 
-    # número de nodos del arbolP
+    # número de nodos del treeP
     n_nodes = range(len(nodes))
     # conjunto de
     sigma_range = range(len(sigma_dict))
@@ -209,27 +226,27 @@ def milp(arbol, max_states, verbose=0):
     model.Params.OutputFlag = verbose
 
     # variables
-    x = model.addVars(
+    n_to_q = model.addVars(
         n_nodes, n_states, vtype=GRB.BINARY, name="x_nq"
     )  # nodo n es mapeado a estado q
     delta = model.addVars(
         n_states, sigma_range, n_states, vtype=GRB.BINARY, name="delta_qnq"
     )  # funcion de trancicion de automata
-    f = model.addVars(
+    is_used = model.addVars(
         n_states, vtype=GRB.BINARY, name="f_q"
     )  # 1 ssi estado q es usado
-    c = model.addVar(
-        vtype=GRB.CONTINUOUS, name="c"
+    cost = model.addVar(
+        vtype=GRB.CONTINUOUS, name="cost"
     )  # funcion de costo auxiliar
 
     ## instanciar modelo
     ## restricciones (1)
     model.addConstrs(
-        (quicksum(x[n, q] for q in n_states) == 1 for n in n_nodes),
+        (quicksum(n_to_q[n, q] for q in n_states) == 1 for n in n_nodes),
         name="R(1)",
     )
     ## restriccion (2)
-    model.addConstr((x[root, 0] == 1), name="R(2)")
+    model.addConstr((n_to_q[root, 0] == 1), name="R(2)")
     ## restricciones (3)
     model.addConstrs(
         (
@@ -241,10 +258,15 @@ def milp(arbol, max_states, verbose=0):
     )
 
     # # ## restricciones (5)
+    def assignation(node, state1, state2):
+        a_side = n_to_q[tree.parent(node), state1]
+        b_side = n_to_q[node, state2]
+        delta_side = delta[state1, sigma_dict[tree.sigma(node)], state2]
+        return a_side + b_side - 1 <= delta_side
+
     model.addConstrs(
         (
-            x[arbol.parent(n), q] + x[n, qp] - 1
-            <= delta[q, sigma_dict[arbol.sigma(n)], qp]
+            assignation(n, q, qp)
             for n in list(n_nodes)[1:]
             for q in n_states
             for qp in n_states
@@ -254,29 +276,51 @@ def milp(arbol, max_states, verbose=0):
 
     # Restriccion adicional para el indice
     model.addConstrs(
-        (q * x[n, q] <= c for n in n_nodes for q in n_states), name="R(0)"
+        (q * n_to_q[n, q] <= cost for n in n_nodes for q in n_states),
+        name="R(0)",
     )
 
     # Restriccion para forzar a rechazar los negativos y aceptar los positivos
+    acceptance_pos = (
+        n_to_q[n, q] <= is_used[q]
+        for q in n_states
+        for n in tree.f_state_pos()
+    )
+    acceptance_neg = (
+        n_to_q[n, q] <= 1 - is_used[q]
+        for q in n_states
+        for n in tree.f_state_neg()
+    )
     model.addConstrs(
-        (x[n, q] <= f[q] for q in n_states for n in arbol.f_state_pos()),
+        acceptance_pos,
         name="aceptacion pos",
     )
     model.addConstrs(
-        (
-            x[n, q] <= 1 - f[q]
-            for q in n_states
-            for n in arbol.f_state_neg()
-        ),
+        acceptance_neg,
         name="aceptacion neg",
     )
 
-    # setear funcion objetivo
-    model.setObjective(c, GRB.MINIMIZE)
+    # objective function
+    model.setObjective(cost, GRB.MINIMIZE)
 
     # optimizar
     model.optimize()
-    return model, x, delta, c, f, rev_sigma_dict
+    solution = {
+        "model": model,
+        "n_to_q": n_to_q,
+        "delta": delta,
+        "cost": cost,
+        "is_used": is_used,
+        "rev_sigma_dict": rev_sigma_dict,
+    }
+    return solution
+
+
+def check_automata(automata, traces) -> bool:
+    """
+    Function thay checks if an automata accepts and
+    rejects the corresponding traces
+    """
 
 
 if __name__ == "__main__":
@@ -286,7 +330,7 @@ if __name__ == "__main__":
     connections = read_json("./traces_ch/B6ByNegPMKs_connectivity.json")
     objects = read_json("./traces_ch/B6ByNegPMKs_objects.json")
 
-    all_traces = generate_trace(p, connections, objects)
+    all_traces = generate_trace(trace_steps, connections, objects)
 
     g = God(all_traces)
     arbol = g.give_me_the_plant()
