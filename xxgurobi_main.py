@@ -146,8 +146,8 @@ class God:
 
     def __init__(self, traces):
         predicates = create_preds_vector(traces)
-        ev2binpr = event2binpreds(predicates)
-        self.arbol = PrefixTree(traces, ev2binpr)
+        self.ev2binpr = event2binpreds(predicates)
+        self.arbol = PrefixTree(traces, self.ev2binpr)
 
     def give_me_the_plant(self):
         """
@@ -162,22 +162,84 @@ class Automata:
     the milp solution
     """
 
-    def __init__(self, delta, is_used, rev_sigma_dict):
-        self.delta = delta
-        self.is_used = is_used
-        self.rev_sigma_dict = rev_sigma_dict
-        print("is used", is_used)
-        print("rev sigma", rev_sigma_dict)
+    def __init__(self, solution):
+        self._delta = {
+            (k[0], k[1]): k[2]
+            for k, v in solution["delta"].items()
+            if v.x > 0.5
+        }
+        self._node_to_state = {
+            nq[0]: nq[1]
+            for nq, val in solution["n_to_q"].items()
+            if val.x > 0.5
+        }
+        self._is_used = {q for n, q in self._node_to_state.items()}
+        self._rev_sigma_dict = solution["rev_sigma_dict"]
+        self._sigma_dict = solution["sigma_dict"]
+        self._event2binpreds = None
+        self.state_signs = {state: None for state in self._is_used}
 
-    def process_trace(self, traces_dict: dict):
+    def delta(self, state, sigma):
+        """
+        Function that returns the state resulting from read the word sigma in
+        state.
+
+        Here we assume that if the transition is not defined, then we stay
+        in the same state.
+        """
+        next_state = self._delta.get((state, sigma))
+        return next_state if next_state is not None else state
+
+    def process_just_one_trace(self, trace: list):
+        """
+        Function to process just one trace and return if the signs are equal
+        """
+        state = 0
+        for step in trace:
+            sigma = self.room2sigma(step)
+            state = self.delta(state, sigma)
+        return state
+
+    def process_traces(self, traces_dict: dict):
         """
         Module that process a trace and return if its a positive, negative or
         unsigned trace
         """
         for sgn, traces in traces_dict.items():
-            print(sgn, ":")
             for trace in traces:
-                print(trace)
+                state = self.process_just_one_trace(trace)
+                if self.state_signs[state] != sgn:
+                    return False
+        return True
+
+    def set_event2binpreds(self, e2b) -> None:
+        """
+        Function thats sets the function that
+        """
+        self._event2binpreds = e2b
+
+    def set_signs(self, positive_nodes: list, negative_nodes: list) -> None:
+        """
+        Args:
+            positive_nodes ([int]): list of positive and acceptance nodes
+            negative_nodes ([int]): list of negative nodes
+        """
+        for node in positive_nodes:
+            state = self._node_to_state[node]
+            self.state_signs[state] = "pos"
+        for node in negative_nodes:
+            state = self._node_to_state[node]
+            if self.state_signs[state] == "pos":
+                raise ValueError("Sign conflict")
+            self.state_signs[state] = "neg"
+
+    def room2sigma(self, room: list):
+        """
+        Function thats translate the detectors in a trace room into a sigma
+        id from the milp execution
+        """
+        room_tuple = self._event2binpreds(room)
+        return self._sigma_dict[room_tuple]
 
 
 def create_preds_vector(traces):
@@ -194,7 +256,8 @@ def create_preds_vector(traces):
 
 def event2binpreds(predicates):
     """
-    Function
+    Function that returns a function thats takes a list of predicates and
+    gives a binary tuple of predicates
     """
 
     def e2b(event):
@@ -312,6 +375,7 @@ def milp(tree, max_states, verbose=0):
         "cost": cost,
         "is_used": is_used,
         "rev_sigma_dict": rev_sigma_dict,
+        "sigma_dict": sigma_dict,
     }
     return solution
 

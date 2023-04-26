@@ -85,12 +85,14 @@ def traces2formulas(
 
     """
     for n_dag_nodes in range(2, max_n_dag_nodes + 1):
+        input(f"VUELTA {n_dag_nodes}")
         dags_generator = generate_dag(n_dag_nodes, tries_limit)
 
         traces_to_file(traces_template)
 
         valids = []
         for dag_id, dag in dags_generator:
+            print(f"Iterating dags, actual id: {dag_id}")
             formula_to_file(theformula(dag))
             sleep(0.2)
 
@@ -104,6 +106,8 @@ def traces2formulas(
                 os.remove("solutions.txt")
                 return True, dag_id, valids
         os.remove("solutions.txt")
+    # TODO
+    print("REMEMBER TO FIX CLINGO WAY")
     return False, -1, []
 
 

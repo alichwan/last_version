@@ -2,55 +2,17 @@
 General module for experiment related functions
 """
 
-from time import perf_counter_ns
+from toro2traces import toro_traces
+
 from xxclingo_main import traces2formulas
+
 from xxgurobi_main import God, milp, Automata
 from xxtraces_tools import (
-    read_json,
     generate_trace_clingo,
     generate_trace_gurobi,
     pos_negs_traces,
     get_graphs_from_id,
 )
-
-
-# def run_experiment(max_steps_trace: int, max_len_form: int):
-#     """
-#     Function
-#     """
-#     connections = read_json("traces_ch/B6ByNegPMKs_connectivity.json")
-#     objects = read_json("traces_ch/B6ByNegPMKs_objects.json")
-#     results = []
-#     for trace_steps in range(4, max_steps_trace + 1):
-#         trace_sat = False
-#         for n_nodes in range(2, max_len_form + 1):
-#             print(
-#                 f"Trying with {trace_steps} trace steps and {n_nodes} nodes in formula"
-#             )
-#             formulas_gen = traces2formulas(
-#                 n_nodes, trace_steps, connections, objects
-#             )
-#             start_counter_ns = perf_counter_ns()
-#             for satisfiable, bin_num, _ in formulas_gen:
-#                 if satisfiable:
-#                     end_counter_ns = perf_counter_ns()
-#                     timer_ns = end_counter_ns - start_counter_ns
-#                     trace_sat = True
-#                     results.append(
-#                         (trace_steps, n_nodes, bin_num, timer_ns / (10**9))
-#                     )
-#                     print(results)
-#                     with open("tiempos.txt", "a", encoding="utf-8") as file:
-#                         file.write(
-#                             f"({trace_steps}, {n_nodes}, {bin_num}, {timer_ns / (10**9)})\n"
-#                         )
-#                     break
-#             if trace_sat:
-#                 print(
-#                     f"Trace with {trace_steps} steps, satisfiable with {n_nodes} nodes"
-#                 )
-#                 break
-#     return results  # en caso de que llegue hasta el final
 
 
 def comparing(trace_steps, n_dag_nodes, connections, objects):
@@ -94,12 +56,44 @@ def experiment_gurobi(room_id: str, trace_steps: int, max_states: int):
     traces_list = generate_trace_gurobi(pos_trace, neg_traces, objects)
 
     # executes milp
-    arbol = God(traces_list).give_me_the_plant()
+    dios = God(traces_list)
+    arbol = dios.give_me_the_plant()
     if not arbol.sat:
         raise ValueError("UNSATISFIABLE")
-    sol = milp(arbol, max_states)
-    automata = Automata(sol["delta"], sol["is_used"], sol["rev_sigma_dict"])
-    # if automata.process_trace(traces_list): good
+
+    solution = milp(arbol, max_states)
+    automata = Automata(solution)
+    automata.set_event2binpreds(dios.ev2binpr)
+    automata.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
+
+    if not automata.process_traces(traces_list):
+        raise ValueError("Automata is not working properly")
+
+    return automata
+
+
+def debug_gurobi(max_states: int):
+    """
+    Function that use the toro traces to debug the system.
+    The idea is that the last state transitioned has the same sign as expected
+    """
+    # Read toro traces
+    traces_list = toro_traces()
+
+    # executes milp
+    dios = God(traces_list)
+    arbol = dios.give_me_the_plant()
+    if not arbol.sat:
+        raise ValueError("UNSATISFIABLE")
+    solution = milp(arbol, max_states)
+
+    automata = Automata(solution)
+    automata.set_event2binpreds(dios.ev2binpr)
+    automata.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
+
+    if not automata.process_traces(traces_list):
+        raise ValueError("Automata is not working properly")
+
     return automata
 
 
@@ -107,8 +101,10 @@ if __name__ == "__main__":
     ROOM_ID = "B6ByNegPMKs"
     STEPS = 3
 
-    # MAX_AUTOMATA_STATES = 10
-    # print(experiment_gurobi(ROOM_ID, STEPS, MAX_AUTOMATA_STATES))
+    # MAX_N_DAG_NODES = 4
+    # print(experiment_clingo(ROOM_ID, STEPS, MAX_N_DAG_NODES))
 
-    MAX_N_DAG_NODES = 4
-    print(experiment_clingo(ROOM_ID, STEPS, MAX_N_DAG_NODES))
+    MAX_AUTOMATA_STATES = 10
+    print(experiment_gurobi(ROOM_ID, STEPS, MAX_AUTOMATA_STATES))
+
+    # print(debug_gurobi(10))

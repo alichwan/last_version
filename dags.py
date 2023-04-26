@@ -42,9 +42,6 @@ def generate_matrix(dim: float, tries_limit):
                 counter += 1
         if is_valid(mat):
             tries += 1
-            show = min(tries_limit, 2**dim_list)
-            print(tries_limit, 2**dim_list)
-            print(f"van {tries} intentos validos de {show} para {dim} nodos")
             yield id_list, mat
         if tries >= tries_limit:
             break
@@ -111,8 +108,10 @@ def generate_dag(dim: int, tries_limit=500):
     """
     Function
     """
+    input(f"Generating dag: dim = {dim}")
     matrix_generator = generate_matrix(dim, tries_limit)
     for id_mat, mat in matrix_generator:
+        input(f"Generating dag dim {dim} with id: {id_mat}")
         yield id_mat, matrix2graph(mat)
 
 
