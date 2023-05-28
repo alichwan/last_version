@@ -3,6 +3,7 @@ Module that contains some basic functionality used by most of the modules.
 """
 import json
 import numpy as np
+from time import perf_counter_ns
 
 
 def read_json(path: str):
@@ -134,9 +135,7 @@ def objects_to_str(obj_trace: list, trace_id: int, sign: str):
     template += f"{sign}Trace({trace_id}).\n"
     for time, objects in enumerate(obj_trace):
         for obj in objects:
-            template += (
-                f"trace({trace_id},{str(obj).replace(' ', '_')},{time}).\n"
-            )
+            template += f"trace({trace_id},{str(obj).replace(' ', '_')},{time}).\n"
     return f"\n{template.strip()}\n"
 
 
@@ -158,6 +157,26 @@ def get_graphs_from_id(room_id: str) -> (dict, dict):
     connections = read_json(f"traces_ch/{room_id}_connectivity.json")
     objects = read_json(f"traces_ch/{room_id}_objects.json")
     return connections, objects
+
+
+def get_exec_time(func):
+    """Decorate a function to get the execution time
+
+    Args:
+        func (Callable): Some function
+    """
+
+    def nested(*args, **kwargs):
+        # storing time before function execution
+        start_time = perf_counter_ns()
+
+        output = func(*args, **kwargs)
+
+        end_time = perf_counter_ns()
+        execution_time = (end_time - start_time) / 1_000_000_000
+        return execution_time, output
+
+    return nested
 
 
 if __name__ == "__main__":

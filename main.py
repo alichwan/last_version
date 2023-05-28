@@ -24,9 +24,7 @@ def theformula(nodes: list):
             frml_nodes[f"n{i+1}"] = f"h(pred{i+1})"
             file_template += f"predicate(pred{i+1}).\n"
         elif aux == 1:
-            frml_nodes[f"n{i+1}"] = f"f(op{i+1}" + ", {})".format(
-                frml_nodes[f"n{der}"]
-            )
+            frml_nodes[f"n{i+1}"] = f"f(op{i+1}" + ", {})".format(frml_nodes[f"n{der}"])
             file_template += f"unary(op{i+1}).\n"
         elif aux == 2:
             frml_nodes[f"n{i+1}"] = f"f(op{i+1}" + ", {}, {})".format(
@@ -44,18 +42,12 @@ def traces2formulas(traces_file, n_nodes, tries_limit=500, direct=False):
     valids = []
     if direct:
         lines = traces_file.split("\n")
-        lines = [
-            line.strip().strip("trace().")
-            for line in lines
-            if line.strip() != ""
-        ]
+        lines = [line.strip().strip("trace().") for line in lines if line.strip() != ""]
     else:
         with open(traces_file, "r") as traces:
             lines = traces.readlines()
             lines = [
-                line.strip().strip("trace().")
-                for line in lines
-                if line.strip() != ""
+                line.strip().strip("trace().") for line in lines if line.strip() != ""
             ]
     # preds_allowed = set()
     # for line in lines:
@@ -90,9 +82,7 @@ def traces2formulas(traces_file, n_nodes, tries_limit=500, direct=False):
                 print("SATISFIABLE")
                 SATISFIABLE = True
                 index_answers = [
-                    i + 1
-                    for i in range(len(output))
-                    if output[i].startswith("Answer")
+                    i + 1 for i in range(len(output)) if output[i].startswith("Answer")
                 ]
                 # print(index_answers)
                 for j in index_answers:
@@ -127,9 +117,7 @@ def run_experiment(max_steps_trace: int, max_len_form: int, direct=False):
                     results.append((p, L, bin_num, timer_ns / (10**9)))
                     print(results)
                     with open("tiempos.txt", "a") as f:
-                        f.write(
-                            f"({p}, {L}, {bin_num}, {timer_ns / (10**9)})\n"
-                        )
+                        f.write(f"({p}, {L}, {bin_num}, {timer_ns / (10**9)})\n")
                     break
             if trace_sat:
                 print(
