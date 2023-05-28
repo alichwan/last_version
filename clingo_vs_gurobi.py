@@ -61,12 +61,8 @@ class Graph:
         return pos_trace, neg_traces
 
     def traces_to_objects_dict(self, pos_traces, neg_traces):
-        pos_objects = [
-            traces_to_objects(tr, self.objects) for tr in pos_traces
-        ]
-        neg_objects = [
-            traces_to_objects(tr, self.objects) for tr in neg_traces
-        ]
+        pos_objects = [traces_to_objects(tr, self.objects) for tr in pos_traces]
+        neg_objects = [traces_to_objects(tr, self.objects) for tr in neg_traces]
         return {
             "pos": pos_objects,
             "neg": neg_objects,
@@ -134,7 +130,9 @@ class GurobiExperiment:
 
         assert arbol.id_nodes[0]._id == 0
         logging.debug("Arbol satisfacible")
-        modelo, x, delta, c, f, rev_Sigma_dict = milp(arbol, self.max_automata_states, verbose)
+        modelo, x, delta, c, f, rev_Sigma_dict = milp(
+            arbol, self.max_automata_states, verbose
+        )
         logging.debug("Resolvio el MILP")
 
         if modelo.Status == 2:
@@ -145,7 +143,9 @@ class GurobiExperiment:
                     res += f"N({nodestate[0]}) -> S({nodestate[1]})\n"
             for q, s, qp in delta:
                 if q != qp and delta[q, s, qp].X > 0.2:
-                    res += f" S({q}) -{arbol.Sigma_simbol[rev_Sigma_dict[s]]}-> S({qp})\n"
+                    res += (
+                        f" S({q}) -{arbol.Sigma_simbol[rev_Sigma_dict[s]]}-> S({qp})\n"
+                    )
             arbol.print_tree()
             print(arbol.sat)
             print(arbol.Sigma)
@@ -171,7 +171,9 @@ class GurobiExperiment:
 
         assert arbol.id_nodes[0]._id == 0
         logging.debug("Arbol satisfacible")
-        modelo, x, delta, c, f, rev_Sigma_dict = milp(arbol, self.max_automata_states, verbose)
+        modelo, x, delta, c, f, rev_Sigma_dict = milp(
+            arbol, self.max_automata_states, verbose
+        )
         logging.debug("Resolvio el MILP")
 
         if modelo.Status == 2:
@@ -238,12 +240,8 @@ class Experiment:
             "Gurobi time[s]": gur_times,
         }
         df_results = pd.DataFrame(data)
-        difference = (
-            df_results["Clingo time[s]"] - df_results["Gurobi time[s]"]
-        )
-        df_results["faster"] = difference.map(
-            lambda x: "Gurobi" if x < 0 else "Clingo"
-        )
+        difference = df_results["Clingo time[s]"] - df_results["Gurobi time[s]"]
+        df_results["faster"] = difference.map(lambda x: "Gurobi" if x < 0 else "Clingo")
         df_results["difference [s]"] = abs(difference)
         return df_results
 
@@ -278,7 +276,7 @@ class Experiment:
 
         print(f"tiempo clingo: {time_cli_end-time_cli_start} seconds")
         print(f"tiempo gurobi: {time_gur_end-time_gur_start} seconds")
-        return modelo, x,delta, c, f, Sigma_dict, arbol
+        return modelo, x, delta, c, f, Sigma_dict, arbol
 
 
 if __name__ == "__main__":

@@ -9,5 +9,10 @@ tiempos.txt
 traces_amano.lp
 theformula.lp
 traces.lp
+prefix_tree.lp
+CSAR.txt
 
 env/
+.dependencygraph/
+
+xxbig_formula.py
