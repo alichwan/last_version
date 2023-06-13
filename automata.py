@@ -139,7 +139,9 @@ class Automata(AutomataBase):
     def __init__(self, solution, e2b):
         super().__init__()
         self._node_to_state = {
-            nq[0]: nq[1] for nq, val in solution["n_to_q"].items() if val.x > 0.5
+            nq[0]: nq[1]
+            for nq, val in solution["n_to_q"].items()
+            if val.x > 0.5
         }
         self._is_used = {q for n, q in self._node_to_state.items()}
         self._delta = {
@@ -205,7 +207,9 @@ class AutomataClingo(AutomataBase):
         self._ssigma = solution["ssigma"]
         self._states_used = max(self._node_to_state.values())
         self._solver_signs = solution["states_signs"]  # See w to do with this
-        self.state_signs = {state: None for state in range(self._states_used + 1)}
+        self.state_signs = {
+            state: None for state in range(self._states_used + 1)
+        }
         self._final_states = []
         self._event2binpreds = e2b
 
@@ -234,7 +238,9 @@ class AutomataClingo(AutomataBase):
             room_tuple = self._event2binpreds(room)
             return f"{room_tuple}".strip("()").replace(", ", "")
         except TypeError as exc:
-            raise AttributeError("Attr '_event2binpreds' hasn´t been assigned") from exc
+            raise AttributeError(
+                "Attr '_event2binpreds' hasn´t been assigned"
+            ) from exc
 
 
 if __name__ == "__main__":

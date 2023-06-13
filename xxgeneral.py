@@ -218,6 +218,7 @@ def compare_csar_gsar_randompaths(
     for n_steps in range(min_steps, max_steps + 1):
         # generate random traces with incremental number of steps
         traces_dict = base_graph.generate_traces(n_steps)
+        print(traces_dict["pos"])
         # get the traces and embed the automatas
         god = God(traces_dict)
         tree = god.give_me_the_plant()
@@ -264,9 +265,56 @@ def compare_csar_gsar_randompaths(
     return pd.DataFrame(final_data)
 
 
+def last_node_mode_csar_gsar(room_id: str, max_states: int, n_steps: int):
+    base_graph = Graph(
+        f"traces_ch/{room_id}_connectivity.json",
+        f"traces_ch/{room_id}_objects.json",
+    )
+    traces_dict = base_graph.same_last_node_traces(n_steps)
+    print("len traces neg:", len(traces_dict["neg"]))
+    print("traces pos:", traces_dict["pos"])
+
+    print(len(traces_dict["pos"]))
+    print(len(traces_dict["neg"]))
+
+    # executes milp
+    dios = God(traces_dict)
+    arbol = dios.give_me_the_plant()
+    if not arbol.sat:
+        raise ValueError("Unsatisfiable by tree")
+
+    # CLINGO
+    time_c, automata_c = time_for_prefixtree_to_csar(
+        arbol, max_states, dios.ev2binpr
+    )
+
+    automata_c.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
+    if not automata_c.check_traces(traces_dict):
+        raise ValueError("CSAR Automata has not passed the check")
+
+    # GUROBI
+    time_g, automata_g = time_for_prefixtree_to_gsar(
+        arbol, max_states, dios.ev2binpr
+    )
+
+    automata_g.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
+    if not automata_g.check_traces(traces_dict):
+        raise ValueError("GSAR Automata has not passed the check")
+
+    print(automata_g)
+
+    # CHECKS
+    print("n states c", len(automata_c.state_signs))
+    print("n states g", len(automata_g.state_signs))
+
+    print(dios.predicates)
+    print(f"Clingo time [s]: {time_c}")
+    print(f"Gurobi time [s]: {time_g}")
+
+
 if __name__ == "__main__":
     ROOM_ID = "B6ByNegPMKs"
-    STEPS = 3
+    STEPS = 7
     # MAX_N_DAG_NODES = 4
     MAX_STATES = 10
 
@@ -277,9 +325,10 @@ if __name__ == "__main__":
     # print(debug_csar(MAX_STATES))
     # compare_csar_gsar_debug(MAX_STATES)
 
-    csar_vs_gsar_times = get_exec_time(compare_csar_gsar_randompaths)
-
-    time_total, df_results = csar_vs_gsar_times(ROOM_ID, 20, 50, MAX_STATES)
-    print("Total time: ", time_total)
-    print(df_results)
+    # csar_vs_gsar_times = get_exec_time(compare_csar_gsar_randompaths)
+    # time_total, df_results = csar_vs_gsar_times(ROOM_ID, 20, 50, MAX_STATES)
+    # print("Total time: ", time_total)
+    # print(df_results)
     # df_results.to_csv("experiments_csar_gsar.csv")
+
+    last_node_mode_csar_gsar(ROOM_ID, MAX_STATES, STEPS)
