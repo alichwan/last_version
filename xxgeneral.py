@@ -1,7 +1,8 @@
 """
 General module for experiment related functions
 """
-from time import perf_counter_ns
+from typing import Any
+import pandas as pd
 from toro2traces import toro_traces
 from xxclingo_main import traces2formulas
 from xxgurobi_main import milp
@@ -15,6 +16,7 @@ from xxtraces_tools import (
     get_graphs_from_id,
     get_exec_time,
 )
+from graph import Graph
 
 
 def comparing(trace_steps, n_dag_nodes, connections, objects):
@@ -122,10 +124,14 @@ def debug_csar(max_states: int):
 
 
 @get_exec_time
-def time_for_prefixtree_to_csar(arbol, max_states, ev2binpr):
+def time_for_prefixtree_to_csar(arbol, max_states, ev2binpr) -> [float, Any]:
     """Given a prefix tree, this decorated function will return the time in
     seconds that takes to transform the prefix tree into a CSAR, and the
     automaton itself.
+
+    returns:
+        - excecution_time (float): Time in seconds that takes the function
+        - automaton (AutomataClingo): The automaton returned
     """
     return prefixtree_to_automata(arbol, max_states, ev2binpr)
 
@@ -139,24 +145,6 @@ def time_for_prefixtree_to_gsar(arbol, max_states, ev2binpr):
     solution = milp(arbol, max_states)
     automata = Automata(solution, ev2binpr)
     return automata
-
-
-def prefixtree_to_dict(tree):
-    """From a PrefixTree class extract the automaton tuple as a dictionary:
-    (nodes, states, initial state, final states, transitions)
-    """
-
-
-def csar_to_dict(csar_automaton):
-    """From a ClingoAutomata class extract the automaton tuple as a dictionary:
-    (nodes, states, initial state, final states, transitions)
-    """
-
-
-def gsar_to_dict(gsar_automaton):
-    """From a Automata class extract the automaton tuple as a dictionary:
-    (nodes, states, initial state, final states, transitions)
-    """
 
 
 def compare_csar_gsar_debug(max_states: int):
@@ -174,15 +162,18 @@ def compare_csar_gsar_debug(max_states: int):
         raise ValueError("Unsatisfiable by tree")
 
     # CLINGO
-    automata_c = prefixtree_to_automata(arbol, max_states, dios.ev2binpr)
+    time_c, automata_c = time_for_prefixtree_to_csar(
+        arbol, max_states, dios.ev2binpr
+    )
 
     automata_c.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
     if not automata_c.check_traces(traces_dict):
         raise ValueError("CSAR Automata has not passed the check")
 
     # GUROBI
-    solution = milp(arbol, max_states)
-    automata_g = Automata(solution, dios.ev2binpr)
+    time_g, automata_g = time_for_prefixtree_to_gsar(
+        arbol, max_states, dios.ev2binpr
+    )
 
     automata_g.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
     if not automata_g.check_traces(traces_dict):
@@ -194,30 +185,101 @@ def compare_csar_gsar_debug(max_states: int):
     print(automata_c == automata_g)
 
     print(dios.predicates)
-    print(f"Clingo time [s]: {execution_time_c}")
-    print(f"Gurobi time [s]: {execution_time_g}")
+    print(f"Clingo time [s]: {time_c}")
+    print(f"Gurobi time [s]: {time_g}")
 
 
-def compare_csar_gsar_randompaths(max_states: int):
+def compare_csar_gsar_randompaths(
+    room_id: str, min_steps: int = 3, max_steps: int = 5, max_states: int = 10
+):
     """Creates random paths to create the positive and negative traces, from
     there a prefix tree will be computed and will passed through clingo solver
     or gurobi solver, check if this solutions are valids and get the time of
     each process.
 
     Args:
-        max_states (int): number of maximum states that can be used to compute
+        room_id (str): ID of the graph that would be used to get the objects
+        min_steps (int, optional): Length of the shortest trace to evaluate. Defaults to 3.
+        max_steps (int, optional): Length of the larges trace to evaluate. Defaults to 5.
+        max_states (int, optional): Max states that can have the solution. Defaults to 10.
     """
+    # list to store
+    nsteps = []
+    pt2csar_time = []
+    pt2gsar_time = []
+    csar_states = []
+    gsar_states = []
+
+    base_graph = Graph(
+        f"traces_ch/{room_id}_connectivity.json",
+        f"traces_ch/{room_id}_objects.json",
+    )
+
+    for n_steps in range(min_steps, max_steps + 1):
+        # generate random traces with incremental number of steps
+        traces_dict = base_graph.generate_traces(n_steps)
+        # get the traces and embed the automatas
+        god = God(traces_dict)
+        tree = god.give_me_the_plant()
+        if not tree.sat:
+            # raise ValueError("Unsatisfiable by tree")
+            continue
+        nsteps.append(n_steps)
+
+        # CLINGO
+        time_c, automata_c = time_for_prefixtree_to_csar(
+            tree, max_states, god.ev2binpr
+        )
+        automata_c.set_signs(tree.f_state_pos(), tree.f_state_neg())
+        if not automata_c.check_traces(traces_dict):
+            # raise ValueError("CSAR Automata has not passed the check")
+            csar_states.append("Error")
+        else:
+            csar_states.append(len(automata_c.state_signs))
+
+        # GUROBI
+        time_g, automata_g = time_for_prefixtree_to_gsar(
+            tree, max_states, god.ev2binpr
+        )
+        automata_g.set_signs(tree.f_state_pos(), tree.f_state_neg())
+        if not automata_g.check_traces(traces_dict):
+            # raise ValueError("GSAR Automata has not passed the check")
+            gsar_states.append("Error")
+        else:
+            gsar_states.append(len(automata_g.state_signs))
+
+        pt2csar_time.append(time_c)
+        pt2gsar_time.append(time_g)
+        del traces_dict
+        del god
+        del tree
+
+    final_data = {
+        "n steps": nsteps,
+        "csar time": pt2csar_time,
+        "gsar_time": pt2gsar_time,
+        "n csar states": csar_states,
+        "n gsar states": gsar_states,
+    }
+    return pd.DataFrame(final_data)
 
 
 if __name__ == "__main__":
     ROOM_ID = "B6ByNegPMKs"
     STEPS = 3
-
     # MAX_N_DAG_NODES = 4
+    MAX_STATES = 10
+
     # print(experiment_clingo(ROOM_ID, STEPS, MAX_N_DAG_NODES))
 
-    MAX_AUTOMATA_STATES = 10
-    # print(experiment_gurobi(ROOM_ID, STEPS, MAX_AUTOMATA_STATES))
-    # print(debug_gurobi(MAX_AUTOMATA_STATES))
-    # print(debug_csar(MAX_AUTOMATA_STATES))
-    compare_csar_gsar_debug(MAX_AUTOMATA_STATES)
+    # print(experiment_gurobi(ROOM_ID, STEPS, MAX_STATES))
+    # print(debug_gurobi(MAX_STATES))
+    # print(debug_csar(MAX_STATES))
+    # compare_csar_gsar_debug(MAX_STATES)
+
+    csar_vs_gsar_times = get_exec_time(compare_csar_gsar_randompaths)
+
+    time_total, df_results = csar_vs_gsar_times(ROOM_ID, 20, 50, MAX_STATES)
+    print("Total time: ", time_total)
+    print(df_results)
+    # df_results.to_csv("experiments_csar_gsar.csv")

@@ -21,6 +21,13 @@ class Node(object):
         self.sign = None
         self.children = {}
 
+    @staticmethod
+    def reset_id() -> None:
+        """Function that makes the index of nodes start from 0 again
+        instead keep counting
+        """
+        Node.new_id = itertools.count()
+
 
 class PrefixTree:
     """
@@ -37,13 +44,14 @@ class PrefixTree:
         self.sat = True
         self.process_traces(traces)
 
-    def process_traces(self, traces):
+    def process_traces(self, traces: dict) -> None:
         """
         Function
         """
         for sgn in ["neg", "pos"]:
             for trace in traces[sgn]:
                 self.new_trace(trace, sgn)
+        Node.reset_id()
 
     def new_trace(self, trace, sign):
         """
@@ -141,7 +149,10 @@ class PrefixTree:
         """
         Function
         """
-        return self.id_nodes[node_id].parent_id
+        try:
+            return self.id_nodes[node_id].parent_id
+        except KeyError as error:
+            print(error.__traceback__)
 
     def sigma(self, node_id):
         """
