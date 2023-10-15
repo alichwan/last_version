@@ -134,7 +134,12 @@ class PrefixTree:
             prev = node.parent_id
             if prev is None:
                 continue
-            sigma_lp = "".join(str(node.sigma).strip("()").split(", "))
+            aux_sigmalp = str(node.sigma).strip("()")
+            sigma_lp = (
+                "".join(aux_sigmalp.split(", "))
+                if len(node.sigma) > 1
+                else aux_sigmalp.strip(",")
+            )
             sigmas_lp.add(sigma_lp)
             encoded_tree += "\n"
             encoded_tree += f'branch({prev},"{sigma_lp}",{node.node_id}).'

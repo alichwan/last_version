@@ -108,10 +108,10 @@ def generate_dag(dim: int, tries_limit=500):
     """
     Function
     """
-    input(f"Generating dag: dim = {dim}")
+    print(f"Generating dag: dim = {dim}")
     matrix_generator = generate_matrix(dim, tries_limit)
     for id_mat, mat in matrix_generator:
-        input(f"Generating dag dim {dim} with id: {id_mat}")
+        print(f"Generating dag dim {dim} with id: {id_mat}")
         yield id_mat, matrix2graph(mat)
 
 

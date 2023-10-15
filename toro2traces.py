@@ -33,7 +33,9 @@ def remove_duplicates(list_of_lists):
     Removes duplicates from a list of lists
     """
     list_of_lists.sort()
-    return [list_of_lists for list_of_lists, _ in itertools.groupby(list_of_lists)]
+    return [
+        list_of_lists for list_of_lists, _ in itertools.groupby(list_of_lists)
+    ]
 
 
 def merge_dicts(list_of_dicts: list) -> dict:
@@ -70,10 +72,18 @@ def plot_connections(modelo, x, delta, c, f, Sigma_dict, arbol):
     color_map = ["white" for q in f]
     for q in f:
         is_positive = any(
-            [arbol.id_nodes[n].sign == "pos" for n in arbol.id_nodes if x[n, q].X > EPS]
+            [
+                arbol.id_nodes[n].sign == "pos"
+                for n in arbol.id_nodes
+                if x[n, q].X > EPS
+            ]
         )
         is_negative = any(
-            [arbol.id_nodes[n].sign == "neg" for n in arbol.id_nodes if x[n, q].X > EPS]
+            [
+                arbol.id_nodes[n].sign == "neg"
+                for n in arbol.id_nodes
+                if x[n, q].X > EPS
+            ]
         )
         if is_positive:
             color_map[q] = "lime"

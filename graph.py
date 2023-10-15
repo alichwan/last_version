@@ -95,56 +95,60 @@ class Graph:
             n_steps (int): Number of steps that the random walk should have
         """
         assert n_steps >= 3
-        n_steps_traces = list()
-        candidate_neg_traces = list()
+        while 1:
+            try:
+                n_steps_traces = list()
+                candidate_neg_traces = list()
 
-        last_node = np.random.choice([*self.connections.keys()])
-        old_list = [
-            [
-                last_node,
-            ],
-        ]
-        new_list = list()
-        while old_list:
-            for current_trace in old_list:
-                if len(current_trace) >= 2:
-                    last_node = current_trace[-2]
-                current_node = current_trace[-1]
-                neighbors = self.connections[current_node]
-                for neighbor in neighbors:
-                    # if neighbor == last_node:
-                    #     continue
-                    new_trace = current_trace + [
-                        neighbor,
-                    ]
-                    new_list.append(new_trace)
-                    if len(new_trace) == n_steps and check_trace(
-                        new_trace, self.objects
-                    ):
-                        n_steps_traces.append(new_trace)
-                        continue
-                    if len(new_trace) >= n_steps + 3:
-                        pos_idx = np.random.choice(range(len(n_steps_traces)))
-                        positive = n_steps_traces.pop(pos_idx)
-                        almost_negatives = n_steps_traces
-                        almost_negatives += candidate_neg_traces
-                        negatives = [
-                            trace
-                            for trace in almost_negatives
-                            if positive[-1] in trace
-                        ]
-                        return self.dict_to_objects(
-                            {
-                                "pos": [
-                                    positive,
-                                ],
-                                "neg": negatives,
-                            }
-                        )
-                    candidate_neg_traces.append(new_trace)
-                old_list = new_list
+                last_node = np.random.choice([*self.connections.keys()])
+                old_list = [
+                    [
+                        last_node,
+                    ],
+                ]
                 new_list = list()
-        print("Error, last node not considered", last_node, old_list)
+                while old_list:
+                    for current_trace in old_list:
+                        if len(current_trace) >= 2:
+                            last_node = current_trace[-2]
+                        current_node = current_trace[-1]
+                        neighbors = self.connections[current_node]
+                        for neighbor in neighbors:
+                            if neighbor == last_node:
+                                continue
+                            new_trace = current_trace + [
+                                neighbor,
+                            ]
+                            new_list.append(new_trace)
+                            if len(new_trace) == n_steps and check_trace(
+                                new_trace, self.objects
+                            ):
+                                n_steps_traces.append(new_trace)
+                                continue
+                            if len(new_trace) >= n_steps + 3:
+                                pos_idx = np.random.choice(range(len(n_steps_traces)))
+                                positive = n_steps_traces.pop(pos_idx)
+                                almost_negatives = n_steps_traces
+                                almost_negatives += candidate_neg_traces
+                                negatives = [
+                                    trace
+                                    for trace in almost_negatives
+                                    if positive[-1] in trace
+                                ]
+                                return self.dict_to_objects(
+                                    {
+                                        "pos": [
+                                            positive,
+                                        ],
+                                        "neg": negatives,
+                                    }
+                                )
+                            candidate_neg_traces.append(new_trace)
+                        old_list = new_list
+                        new_list = list()
+                print("Error, last node not considered", last_node, old_list)
+            except Exception as err:
+                pass
 
     def dict_to_objects(self, id_traces: dict):
         """We must convert those traces with ids to traces with objects

@@ -41,10 +41,12 @@ def check_sat(valids) -> (bool, list):
     with open("solutions.txt", "r", encoding="utf-8") as solution_file:
         output = solution_file.readlines()
 
-    if not "UNSATISFIABLE\n" in output:
+    if "SATISFIABLE\n" in output:
         print("SATISFIABLE")
         index_answers = [
-            idx + 1 for idx, line in enumerate(output) if line.startswith("Answer")
+            idx + 1
+            for idx, line in enumerate(output)
+            if line.startswith("Answer")
         ]
         for j in index_answers:
             valids.append(output[j])
@@ -73,7 +75,7 @@ def formula_to_file(template_formula: str):
 def traces2formulas(
     traces_template: str,
     max_n_dag_nodes: int,
-    tries_limit=500,
+    tries_limit=50,
 ):
     """
     Main function
@@ -83,7 +85,7 @@ def traces2formulas(
 
     """
     for n_dag_nodes in range(2, max_n_dag_nodes + 1):
-        input(f"VUELTA {n_dag_nodes}")
+        print(f"VUELTA {n_dag_nodes}")
         dags_generator = generate_dag(n_dag_nodes, tries_limit)
 
         traces_to_file(traces_template)
@@ -91,17 +93,19 @@ def traces2formulas(
         valids = []
         for dag_id, dag in dags_generator:
             print(f"Iterating dags, actual id: {dag_id}")
-            formula_to_file(theformula(dag))
+            template_formula = theformula(dag)
+            formula_to_file(template_formula)
             sleep(0.2)
 
             if os.path.exists("solutions.txt"):
                 os.remove("solutions.txt")
             os.system("clingo theformula.lp main.lp -n 1 > solutions.txt")
-            # while not os.path.exists("solutions.txt"):
-            #     time.sleep(0.2)
+            while not os.path.exists("solutions.txt"):
+                sleep(0.2)
             satisfiable, valids = check_sat(valids)
             if satisfiable:
                 os.remove("solutions.txt")
+                print(template_formula)
                 return True, dag_id, valids
         os.remove("solutions.txt")
     # TODO
