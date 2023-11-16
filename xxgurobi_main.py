@@ -5,9 +5,17 @@ Module with the gurobi-logic
 from gurobipy import *
 
 
-def milp(tree, max_states, verbose=0):
-    """
-    Function
+def milp(tree, max_states, verbose=0, timelimit=60 * 10):
+    """Mixed Integer Linear Programming that solves the assignation problem
+
+    Args:
+        tree (PrefixTree): Structure that embed the prefix tree logic
+        max_states (int): maximum number of states that can be used to build the solution automaton
+        verbose (int, optional): 1 if gurobi should print whats going on internally. Defaults to 0.
+        timelimit (int, optional): time limit in seconds to solve the problem. Defaults to 30 minutes .
+
+    Returns:
+        _type_: _description_
     """
     nodes = tree.id_nodes
     sigma_dict = {s: i for i, s in enumerate(tree.Sigma)}
@@ -26,6 +34,7 @@ def milp(tree, max_states, verbose=0):
     # modelo
     model = Model("Asignacion_de_estados")
     model.Params.OutputFlag = verbose
+    model.setParam(GRB.Param.TimeLimit, int(timelimit))
 
     # variables
     n_to_q = model.addVars(
@@ -101,6 +110,16 @@ def milp(tree, max_states, verbose=0):
 
     # optimizar
     model.optimize()
+    if model.status == GRB.Status.OPTIMAL:
+        print("Optimal solution")
+        # Acciones para manejar la solución óptima
+    elif model.status == GRB.Status.TIME_LIMIT:
+        print("Non-optimal solution")
+        with open("./curr_experiment.txt", "a", encoding="utf-8") as file:
+            file.write("GurobiTimeLimit")
+        # Acciones para manejar la solución subóptima
+    else:
+        print("No solution was found")
     solution = {
         "model": model,
         "n_to_q": n_to_q,

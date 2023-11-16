@@ -1,0 +1,157 @@
+Problem_id: 50S_5L_0C_5T_0X
+Clingo_time: 0.1979119
+Gurobi_time: 0.6028107
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_5L_0C_5T_10X
+Clingo_time: 0.2550506
+Gurobi_time: 1.1126547
+Clingo_size: 3
+Gurobi_size: 3
+
+Problem_id: 50S_5L_0C_5T_20X
+Clingo_time: 0.9295061
+Gurobi_time: 5.1863912
+Clingo_size: 3
+Gurobi_size: 3
+
+Problem_id: 50S_10L_0C_5T_0X
+Clingo_time: 0.1148162
+Gurobi_time: 0.2948374
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_10L_0C_5T_10X
+Clingo_time: 0.2120183
+Gurobi_time: 1.2377412
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_10L_0C_5T_20X
+Clingo_time: 0.3534863
+Gurobi_time: 4.4743739
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_20L_0C_5T_0X
+Clingo_time: 0.1364485
+Gurobi_time: 0.3127084
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_20L_0C_5T_10X
+Clingo_time: 0.2371649
+Gurobi_time: 1.1304865
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_20L_0C_5T_20X
+Clingo_time: 0.4159736
+Gurobi_time: 4.6999441
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_50L_0C_5T_0X
+Clingo_time: 0.1371164
+Gurobi_time: 0.4001076
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_50L_0C_5T_10X
+Clingo_time: 0.1786683
+Gurobi_time: 0.4898147
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_50L_0C_5T_20X
+Clingo_time: 0.3466338
+Gurobi_time: 1.6714689
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_5L_0C_10T_0X
+Clingo_time: 0.1735269
+Gurobi_time: 3.5611878
+Clingo_size: 3
+Gurobi_size: 3
+
+Problem_id: 50S_5L_0C_10T_10X
+Clingo_time: 1.7580592
+Gurobi_time: 73.1672159
+Clingo_size: 4
+Gurobi_size: 4
+
+Problem_id: 50S_5L_0C_10T_20X
+Clingo_time: 0.5662813
+Gurobi_time: 2.2703688
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_10L_0C_10T_0X
+Clingo_time: 0.2319566
+Gurobi_time: 0.9484194
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_10L_0C_10T_10X
+Clingo_time: 0.3292232
+Gurobi_time: 4.4833178
+Clingo_size: 3
+Gurobi_size: 3
+
+Problem_id: 50S_10L_0C_10T_20X
+Clingo_time: 3.3367452
+Gurobi_time: 21.3708127
+Clingo_size: 3
+Gurobi_size: 3
+
+Problem_id: 50S_20L_0C_10T_0X
+Clingo_time: 0.3004139
+Gurobi_time: 1.0129062
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_20L_0C_10T_10X
+Clingo_time: 0.4354645
+Gurobi_time: 1.9809913
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_20L_0C_10T_20X
+Clingo_time: 0.7346013
+Gurobi_time: 9.1025377
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_50L_0C_10T_0X
+Clingo_time: 0.3074542
+Gurobi_time: 0.552283
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_50L_0C_10T_10X
+Clingo_time: 0.3589214
+Gurobi_time: 3.2260273
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_50L_0C_10T_20X
+Clingo_time: 0.6641365
+Gurobi_time: 4.1648143
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_5L_0C_15T_0X
+Clingo_time: 0.6295404
+Gurobi_time: 17.4519863
+Clingo_size: 4
+Gurobi_size: 4
+
+Problem_id: 50S_5L_0C_15T_10X
+Clingo_time: 62.3085301
+Gurobi_time: 1412.1512683
+Clingo_size: 4
+Gurobi_size: 6
+
+Problem_id: 50S_5L_0C_15T_20X

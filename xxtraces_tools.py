@@ -135,9 +135,7 @@ def objects_to_str(obj_trace: list, trace_id: int, sign: str):
     template += f"{sign}Trace({trace_id}).\n"
     for time, objects in enumerate(obj_trace):
         for obj in objects:
-            template += (
-                f"trace({trace_id},\"{str(obj).replace(' ', '_')}\",{time}).\n"
-            )
+            template += f"trace({trace_id},\"{str(obj).replace(' ', '_')}\",{time}).\n"
     return f"\n{template.strip()}\n"
 
 

@@ -1,0 +1,75 @@
+EXPERIMENTS max_states = 14
+
+Problem_id: 50S_5L_0C_5T_0X
+Clingo_time: 0.2171743
+Gurobi_time: 0.8364633
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_10L_0C_5T_0X
+Clingo_time: 0.2211459
+Gurobi_time: 0.9228592
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_20L_0C_5T_0X
+Clingo_time: 0.2477766
+Gurobi_time: 0.5281074
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_50L_0C_5T_0X
+Clingo_time: 0.275374
+Gurobi_time: 0.5462248
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_5L_0C_10T_0X
+Clingo_time: 0.3603689
+Gurobi_time: 4.6146562
+Clingo_size: 3
+Gurobi_size: 3
+
+Problem_id: 50S_10L_0C_10T_0X
+Clingo_time: 0.2874164
+Gurobi_time: 1.6538353
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_20L_0C_10T_0X
+Clingo_time: 0.420546
+Gurobi_time: 1.7373046
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_50L_0C_10T_0X
+Clingo_time: 0.534713
+Gurobi_time: 1.2925961
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_5L_0C_15T_0X
+Clingo_time: 0.9714054
+Gurobi_time: 18.8874408
+Clingo_size: 4
+Gurobi_size: 4
+
+Problem_id: 50S_10L_0C_15T_0X
+Clingo_time: 0.4249293
+Gurobi_time: 8.0019493
+Clingo_size: 3
+Gurobi_size: 3
+
+Problem_id: 50S_20L_0C_15T_0X
+Clingo_time: 0.624382
+Gurobi_time: 3.1133438
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_50L_0C_15T_0X
+Clingo_time: 0.5907592
+Gurobi_time: 1.9695101
+Clingo_size: 2
+Gurobi_size: 2
+
+Problem_id: 50S_5L_0C_50T_0X

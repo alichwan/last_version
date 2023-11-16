@@ -16,3 +16,5 @@ env/
 .dependencygraph/
 
 xxbig_formula.py
+kirril_files/automatons/
+kirril_files/traces/

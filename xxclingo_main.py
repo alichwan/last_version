@@ -44,9 +44,7 @@ def check_sat(valids) -> (bool, list):
     if "SATISFIABLE\n" in output:
         print("SATISFIABLE")
         index_answers = [
-            idx + 1
-            for idx, line in enumerate(output)
-            if line.startswith("Answer")
+            idx + 1 for idx, line in enumerate(output) if line.startswith("Answer")
         ]
         for j in index_answers:
             valids.append(output[j])

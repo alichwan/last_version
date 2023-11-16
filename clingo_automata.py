@@ -9,6 +9,7 @@ import os
 from typing import Callable
 from prefixtree import PrefixTree
 from automata import AutomataClingo
+from time import perf_counter_ns
 
 # constants
 TREE_LP_FILE = "prefix_tree.lp"
@@ -98,8 +99,13 @@ def clingo_io(tree_str: str, fpath: str, max_q: int) -> str:
         file.write(tree_str)
 
     # this part can be adapted to inpython clingo
-    os.system(f" clingo {fpath} map_automata.lp -c maxStates={max_q} > CSAR.txt")
+    # fpath is the name of the file that saves the prefixtree in clingo
+    time_start = perf_counter_ns()
+    os.system(f"clingo {fpath} map_automata_b2.lp -c maxStates={max_q} > CSAR.txt")
+    time_end = perf_counter_ns()
     # sleep(2)
+    with open("./curr_experiment.txt", "a", encoding="utf-8") as file:
+        file.write(f"Clingo_time: {( time_end - time_start ) / ( 10**9 )}\n")
     with open("CSAR.txt", "r", encoding="UTF-8") as solution:
         solution_text = solution.readlines()
     return solution_text

@@ -162,18 +162,14 @@ def compare_csar_gsar_debug(max_states: int):
         raise ValueError("Unsatisfiable by tree")
 
     # CLINGO
-    time_c, automata_c = time_for_prefixtree_to_csar(
-        arbol, max_states, dios.ev2binpr
-    )
+    time_c, automata_c = time_for_prefixtree_to_csar(arbol, max_states, dios.ev2binpr)
 
     automata_c.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
     if not automata_c.check_traces(traces_dict):
         raise ValueError("CSAR Automata has not passed the check")
 
     # GUROBI
-    time_g, automata_g = time_for_prefixtree_to_gsar(
-        arbol, max_states, dios.ev2binpr
-    )
+    time_g, automata_g = time_for_prefixtree_to_gsar(arbol, max_states, dios.ev2binpr)
 
     automata_g.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
     if not automata_g.check_traces(traces_dict):
@@ -227,9 +223,7 @@ def compare_csar_gsar_randompaths(
             continue
 
         # CLINGO
-        time_c, automata_c = time_for_prefixtree_to_csar(
-            tree, max_states, god.ev2binpr
-        )
+        time_c, automata_c = time_for_prefixtree_to_csar(tree, max_states, god.ev2binpr)
         automata_c.set_signs(tree.f_state_pos(), tree.f_state_neg())
         if not automata_c.check_traces(traces_dict):
             # raise ValueError("CSAR Automata has not passed the check")
@@ -237,9 +231,7 @@ def compare_csar_gsar_randompaths(
             continue
 
         # GUROBI
-        time_g, automata_g = time_for_prefixtree_to_gsar(
-            tree, max_states, god.ev2binpr
-        )
+        time_g, automata_g = time_for_prefixtree_to_gsar(tree, max_states, god.ev2binpr)
         automata_g.set_signs(tree.f_state_pos(), tree.f_state_neg())
         if not automata_g.check_traces(traces_dict):
             # raise ValueError("GSAR Automata has not passed the check")
@@ -302,9 +294,7 @@ def compare_csar_randompaths(
             continue
 
         # CLINGO
-        time_c, automata_c = time_for_prefixtree_to_csar(
-            tree, max_states, god.ev2binpr
-        )
+        time_c, automata_c = time_for_prefixtree_to_csar(tree, max_states, god.ev2binpr)
         automata_c.set_signs(tree.f_state_pos(), tree.f_state_neg())
         if not automata_c.check_traces(traces_dict):
             # raise ValueError("CSAR Automata has not passed the check")
@@ -346,18 +336,14 @@ def last_node_mode_csar_gsar(room_id: str, max_states: int, n_steps: int):
         raise ValueError("Unsatisfiable by tree")
 
     # CLINGO
-    time_c, automata_c = time_for_prefixtree_to_csar(
-        arbol, max_states, dios.ev2binpr
-    )
+    time_c, automata_c = time_for_prefixtree_to_csar(arbol, max_states, dios.ev2binpr)
 
     automata_c.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
     if not automata_c.check_traces(traces_dict):
         raise ValueError("CSAR Automata has not passed the check")
 
     # GUROBI
-    time_g, automata_g = time_for_prefixtree_to_gsar(
-        arbol, max_states, dios.ev2binpr
-    )
+    time_g, automata_g = time_for_prefixtree_to_gsar(arbol, max_states, dios.ev2binpr)
 
     automata_g.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
     if not automata_g.check_traces(traces_dict):
@@ -462,15 +448,15 @@ if __name__ == "__main__":
 
     # print(experiment_clingo(ROOM_ID, STEPS, MAX_N_DAG_NODES))
 
-    # print(experiment_gurobi(ROOM_ID, STEPS, MAX_STATES))
-    # print(debug_gurobi(MAX_STATES))
-    # print(debug_csar(MAX_STATES))
-    # compare_csar_gsar_debug(MAX_STATES)
+    print(experiment_gurobi(ROOM_ID, STEPS, MAX_STATES))
+    print(debug_gurobi(MAX_STATES))
+    print(debug_csar(MAX_STATES))
+    compare_csar_gsar_debug(MAX_STATES)
 
-    csar_vs_gsar_times = get_exec_time(compare_csar_randompaths)
-    time_total, df_results = csar_vs_gsar_times(ROOM_ID, 20, 50, MAX_STATES)
-    print("Total time: ", time_total)
-    print(df_results)
+    # csar_vs_gsar_times = get_exec_time(compare_csar_randompaths)
+    # time_total, df_results = csar_vs_gsar_times(ROOM_ID, 20, 50, MAX_STATES)
+    # print("Total time: ", time_total)
+    # print(df_results)
     # df_results.to_csv("experiments_csar_gsar.csv")
 
     # last_node_mode_csar_gsar(ROOM_ID, MAX_STATES, STEPS)

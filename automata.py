@@ -32,7 +32,7 @@ class AutomataBase:
         for step in trace:
             sigma = self.room2sigma(step)
             state = self.delta(state, sigma)
-        return state
+        return self.state_signs[state]
 
     def check_traces(self, traces_dict: dict):
         """Function that checks if traces are processed as they should
@@ -129,6 +129,25 @@ class AutomataBase:
         print("\n\nInter:", my_auto.intersection(other_auto))
         return not symdiff
 
+    def give_same_sign_guess(self, other_automaton, traces):
+        """Function to compare if two automatons with the method process_just_one_trace
+        give the same sign guesses to a list of traces or not. They would be equal in this sense.
+
+        Args:
+            other_automaton (AutomataBase): Automaton to compare with
+            traces (List[list]): List of traces with unknown sign.
+
+        Returns:
+            _type_: _description_
+        """
+        for trace in traces:
+            this_guess = self.process_just_one_trace(trace)
+            other_guess = other_automaton.process_just_one_trace(trace)
+            if this_guess != other_guess:
+                print("Compared automatons have given different guesses")
+                return False
+        return True
+
 
 class Automata(AutomataBase):
     """
@@ -139,7 +158,9 @@ class Automata(AutomataBase):
     def __init__(self, solution, e2b):
         super().__init__()
         self._node_to_state = {
-            nq[0]: nq[1] for nq, val in solution["n_to_q"].items() if val.x > 0.5
+            nq[0]: nq[1]
+            for nq, val in solution["n_to_q"].items()
+            if val.x > 0.5
         }
         self._is_used = {q for n, q in self._node_to_state.items()}
         self._delta = {
@@ -205,7 +226,9 @@ class AutomataClingo(AutomataBase):
         self._ssigma = solution["ssigma"]
         self._states_used = max(self._node_to_state.values())
         self._solver_signs = solution["states_signs"]  # See w to do with this
-        self.state_signs = {state: None for state in range(self._states_used + 1)}
+        self.state_signs = {
+            state: None for state in range(self._states_used + 1)
+        }
         self._final_states = []
         self._event2binpreds = e2b
 
@@ -234,7 +257,69 @@ class AutomataClingo(AutomataBase):
             room_tuple = self._event2binpreds(room)
             return f"{room_tuple}".strip("()").replace(", ", "")
         except TypeError as exc:
-            raise AttributeError("Attr '_event2binpreds' hasn´t been assigned") from exc
+            raise AttributeError(
+                "Attr '_event2binpreds' hasn´t been assigned"
+            ) from exc
+
+
+class AutomataKirril:
+    """
+    Automata class that encapsulates the information of
+    the automaton given by the Kirril algorithm
+    """
+
+    def __init__(self, transitions):
+        self._delta = {(trans[0], trans[1]): trans[2] for trans in transitions}
+        self._states = {trans[0] for trans in transitions}.union(
+            {trans[2] for trans in transitions}
+        )  #
+        self._sigma = {trans[1] for trans in transitions}  # language
+
+    def process_just_one_trace(self, trace: list):
+        """
+        Function thats translate the detectors in a trace room into a sigma
+        id from the milp execution
+        """
+        state = "V0"
+        for step in trace:
+            state = self.delta(state, step)
+            if state is None:
+                return "neg"
+        return "pos"
+
+    def give_same_sign_guess(self, other_automaton, traces):
+        """Function to compare if two automatons with the method process_just_one_trace
+        give the same sign guesses to a list of traces or not. They would be equal in this sense.
+
+        Args:
+            other_automaton (AutomataBase): Automaton to compare with
+            traces (List[list]): List of traces with unknown sign.
+
+        Returns:
+            _type_: _description_
+        """
+        for trace in traces:
+            this_guess = self.process_just_one_trace(trace)
+            print(f"kirril guess: {this_guess}")
+            other_guess = other_automaton.process_just_one_trace(trace)
+            print(f"other guess: {other_guess}")
+            if this_guess != other_guess:
+                print("compared automatonss have given different guesses")
+                return False
+        return True
+
+    def delta(self, state, sigma):
+        """
+        Function that returns the state resulting from read the word sigma in
+        state.
+
+        Here we assume that if the transition is not defined, then the trace
+        is negative. As in the paper that presents statechum.
+        """
+        # It can be used *sigma just knowing that kirril just use one letter
+        # per transition, as opposed to "multi-elements in a room" approach
+        next_state = self._delta.get((state, *sigma))
+        return next_state
 
 
 if __name__ == "__main__":

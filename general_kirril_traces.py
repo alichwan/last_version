@@ -158,6 +158,30 @@ def debug_csar(max_states: int):
     return automata
 
 
+def kirril_csar(filename: str, max_states: int):
+    """
+    Function that use the toro traces to debug the system.
+    The idea is that the last state transitioned has the same sign as expected
+    """
+    # Read toro traces
+    traces_list = get_kirril_traces(filename=filename)
+
+    # executes milp
+    dios = God(traces_list)
+    arbol = dios.give_me_the_plant()
+    if not arbol.sat:
+        raise ValueError("Unsatisfiable by tree")
+
+    automata = prefixtree_to_automata(arbol, max_states, dios.ev2binpr)
+    automata.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
+
+    # automata.plot()
+    if not automata.check_traces(traces_list):
+        raise ValueError("AutomataClingo is not working properly")
+
+    return automata
+
+
 @get_exec_time
 def time_for_prefixtree_to_csar(arbol, max_states, ev2binpr) -> [float, Any]:
     """Given a prefix tree, this decorated function will return the time in
@@ -197,18 +221,14 @@ def compare_csar_gsar_debug(max_states: int):
         raise ValueError("Unsatisfiable by tree")
 
     # CLINGO
-    time_c, automata_c = time_for_prefixtree_to_csar(
-        arbol, max_states, dios.ev2binpr
-    )
+    time_c, automata_c = time_for_prefixtree_to_csar(arbol, max_states, dios.ev2binpr)
 
     automata_c.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
     if not automata_c.check_traces(traces_dict):
         raise ValueError("CSAR Automata has not passed the check")
 
     # GUROBI
-    time_g, automata_g = time_for_prefixtree_to_gsar(
-        arbol, max_states, dios.ev2binpr
-    )
+    time_g, automata_g = time_for_prefixtree_to_gsar(arbol, max_states, dios.ev2binpr)
 
     automata_g.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
     if not automata_g.check_traces(traces_dict):
@@ -239,18 +259,14 @@ def compare_csar_debug(max_states: int):
         raise ValueError("Unsatisfiable by tree")
 
     # CLINGO
-    time_c, automata_c = time_for_prefixtree_to_csar(
-        arbol, max_states, dios.ev2binpr
-    )
+    time_c, automata_c = time_for_prefixtree_to_csar(arbol, max_states, dios.ev2binpr)
 
     automata_c.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
     if not automata_c.check_traces(traces_dict):
         raise ValueError("CSAR Automata has not passed the check")
 
     # GUROBI
-    time_g, automata_g = time_for_prefixtree_to_gsar(
-        arbol, max_states, dios.ev2binpr
-    )
+    time_g, automata_g = time_for_prefixtree_to_gsar(arbol, max_states, dios.ev2binpr)
 
     automata_g.set_signs(arbol.f_state_pos(), arbol.f_state_neg())
     if not automata_g.check_traces(traces_dict):
@@ -304,9 +320,7 @@ def compare_csar_gsar_randompaths(
             continue
 
         # CLINGO
-        time_c, automata_c = time_for_prefixtree_to_csar(
-            tree, max_states, god.ev2binpr
-        )
+        time_c, automata_c = time_for_prefixtree_to_csar(tree, max_states, god.ev2binpr)
         automata_c.set_signs(tree.f_state_pos(), tree.f_state_neg())
         if not automata_c.check_traces(traces_dict):
             # raise ValueError("CSAR Automata has not passed the check")
@@ -314,9 +328,7 @@ def compare_csar_gsar_randompaths(
             continue
 
         # GUROBI
-        time_g, automata_g = time_for_prefixtree_to_gsar(
-            tree, max_states, god.ev2binpr
-        )
+        time_g, automata_g = time_for_prefixtree_to_gsar(tree, max_states, god.ev2binpr)
         automata_g.set_signs(tree.f_state_pos(), tree.f_state_neg())
         if not automata_g.check_traces(traces_dict):
             # raise ValueError("GSAR Automata has not passed the check")
@@ -379,9 +391,7 @@ def compare_csar_randompaths(
             continue
 
         # CLINGO
-        time_c, automata_c = time_for_prefixtree_to_csar(
-            tree, max_states, god.ev2binpr
-        )
+        time_c, automata_c = time_for_prefixtree_to_csar(tree, max_states, god.ev2binpr)
         automata_c.set_signs(tree.f_state_pos(), tree.f_state_neg())
         if not automata_c.check_traces(traces_dict):
             # raise ValueError("CSAR Automata has not passed the check")
@@ -408,7 +418,31 @@ if __name__ == "__main__":
     MAX_N_DAG_NODES = 7
     MAX_STATES = 10
 
-    print(experiment_clingo_kirril(MAX_N_DAG_NODES))
+    # print(experiment_clingo_kirril(MAX_N_DAG_NODES))
+
+    # KIRRIL TRACES FOR CSAR
+    configurations = [
+        # {"s":0,"l":0,"c":0,"t":0,"x":0}
+        {"s": 10, "l": 5, "c": 0, "t": 10, "x": 0},
+        {"s": 10, "l": 5, "c": 0, "t": 20, "x": 10},
+        {"s": 50, "l": 5, "c": 0, "t": 10, "x": 0},
+        {"s": 20, "l": 5, "c": 0, "t": 20, "x": 10},
+        {"s": 10, "l": 5, "c": 0, "t": 50, "x": 10},
+        {"s": 10, "l": 20, "c": 0, "t": 50, "x": 10},
+    ]
+    for slctx in configurations:
+        STATES = slctx["s"]
+        LANGUAGE = slctx["l"]
+        COUNTER = slctx["c"]
+        TRACESPERSIGN = slctx["t"]
+        EXTRAPATH = slctx["x"]
+        problem_name = f"{STATES}S_{LANGUAGE}L_{COUNTER}C_{TRACESPERSIGN}T_{EXTRAPATH}X"
+        print("name:", problem_name)
+        time_kirril = get_exec_time(kirril_csar)
+        time_get, output = time_kirril(f"{problem_name}.json", 14)
+        # print(output)
+        print(time_get, "\n")
+    # KIRRIL TRACES FOR CSAR
 
     # print(experiment_gurobi(ROOM_ID, STEPS, MAX_STATES))
     # print(debug_gurobi(MAX_STATES))
